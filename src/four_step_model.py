@@ -117,10 +117,10 @@ def test_print(a_word):
     print(a_word)
 
 
-def write_matrix_to_file(T, fpath):
+def write_matrix_to_file(T, fpath, sep=','):
     df = pd.DataFrame(T)
     df = df.applymap(downgrade_to_two_dec)
-    df.to_csv(fpath)
+    df.to_csv(fpath, sep=sep)
 
 
 def downgrade_to_two_dec(x):
@@ -136,13 +136,15 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage):
     # read input arrays
     prod_cons_fp, mv_fp, pcnt = prod_cons_matrix_fp, antist_fp, pcntage
     prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt)
-    test_print([prod_cons_tn, movement, crit_percentage])
+    #test_print([prod_cons_tn, movement, crit_percentage])
     # check if arrays are ok (same length)
     assert is_input_valid(prod_cons_tn, movement, crit_percentage)
     # do some preliminary work
     B_j = [1 for i in range(0, len(prod_cons_tn))]
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
     print("iterations are ", iterations)
-    write_matrix_to_file(T, 'output.csv')
-    # run main algorithm
+    results_file_path = 'results/output.csv'
+    write_matrix_to_file(T, results_file_path, sep='\t')
+    # return the path of the new matrix to show as path
+    return results_file_path
 

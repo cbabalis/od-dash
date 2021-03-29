@@ -3,7 +3,7 @@ import dash
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash_table import DataTable
 from dash.exceptions import PreventUpdate
 import pandas as pd
@@ -12,6 +12,8 @@ import plotly.express as px
 from os import listdir
 from os.path import isfile, join
 import os
+cwd = os.getcwd()
+import four_step_model as fs_model
 
 
 import pdb
@@ -23,8 +25,11 @@ onlyfiles = [f for f in listdir(my_path) if isfile(join(my_path, f))]
 prod_cons_path = 'data/prod_cons/'
 prod_cons_files = [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))]
 
-resistance_path = 'data/antist/'
+resistance_path = 'data/resistance/'
 resistance_files = [f for f in listdir(resistance_path) if isfile(join(resistance_path, f))]
+
+results_path = 'results/'
+results_filepath = 'output.csv'
 
 matrix_text = '''
 #### OD Matrix κείμενο εδώ
@@ -46,16 +51,18 @@ def refine_df(df):
     return df
 
 
-def load_matrix(my_path, selected_matrix_fp, my_matrix=''):
-    if not my_matrix:
+def load_matrix(my_path, selected_matrix_fp):
+    if not my_path or not selected_matrix_fp:
         print("No matrix to load")
-    matrix_filepath = my_path + selected_matrix
+    matrix_filepath = str(my_path) + str(selected_matrix_fp)
     my_matrix = pd.read_csv(matrix_filepath, delimiter='\t')
     return my_matrix
 
 
 sample_df = []
+prod_cons_df_path = ''
 prod_cons_df = []
+resistance_df_path = ''
 resistance_df = []
 # doc for image: https://community.plotly.com/t/background-image/21199/5
 #image = 'url(http://147.102.154.65/enirisst/images/ampeli-dash.png)'
@@ -64,16 +71,6 @@ image = 'url("assets/ampeli-dash.png")'
 
 chart_types = ['Γράφημα Στήλης', 'Γράφημα Πίτας']
 month_dict = {0: 'Όλοι οι μήνες', 1:'Ιανουάριος', 2:'Φεβρουάριος', 3:'Μάρτιος', 4:'Απρίλιος', 5:'Μάιος', 6:'Ιούνιος', 7:'Ιούλιος', 8:'Αύγουστος', 9:'Σεπτέμβριος', 10:'Οκτώβριος', 11:'Νοέμβριος', 12:'Δεκέμβριος'}
-
-
-def get_col_rows_data(selected_country, selected_city, sample_df):
-    if selected_country == '':
-        df_temp = sample_df
-    elif (isinstance(selected_city, str)):
-        df_temp = sample_df[sample_df[selected_country] == selected_city]
-    else:
-        df_temp= sample_df[sample_df[selected_country].isin(selected_city)]
-    return df_temp
 
 
 def get_bar_figure(dff, x_col, y_col, col_sum):
@@ -164,8 +161,15 @@ app.layout = html.Div([
     ],style = {'background-image':image,
                                     'background-size':'cover',
                                     'background-position':'right'}),
-    # table here
+    # tables here
     html.Hr(),
+    html.Div([
+        # productions table
+        html.Div(id='prod-cons-input-table',  className='tableDiv'),
+        # resistance table
+        html.Hr(),
+        html.Div(id='resistance-input-table',  className='tableDiv'),
+    ]),
     html.Div([
     html.H5("Επιλογή Περιόδου"),
     dcc.Slider(id='slider',
@@ -179,9 +183,11 @@ app.layout = html.Div([
                'font-weight': 'bold',
                'fontSize' : '17px',
                'color':'#111111'}),
-    
-    # graphs here
     html.Hr(),
+    # execution button here
+    html.Button('Εκτέλεση Μοντέλου 4 Βημάτων', id='execution-button', n_clicks=0),
+    html.Div(id='container-button-basic', className='tableDiv'),
+    #html.Div(id='four-step-model-matrix',  className='tableDiv'),
 ])
 
 
@@ -189,17 +195,120 @@ app.layout = html.Div([
     Output('availability-radio-prods-cons', 'options'),
     Input('availability-radio-prods-cons', 'value'))
 def set_products_options(selected_country):
-    print(selected_country)
+    #print(selected_country)
     return [{'label': i, 'value': i} for i in prod_cons_files]
 
+
+@app.callback(
+    Output('prod-cons-input-table', 'children'),
+    [Input('availability-radio-prods-cons', 'value'),
+    Input('slider', 'value')
+    ])
+def set_display_table(selected_prod_cons_matrix, month_val):
+    dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
+    # if (month_val):
+    #     dff = dff[dff[MONTH] == month_val]
+    # elif month_val == 0:
+    #     dff = dff
+    df_temp = dff
+    return html.Div([
+        dash_table.DataTable(
+            id='main-table',
+            columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+             data=df_temp.to_dict('rows'),
+             editable=True,
+             filter_action='native',
+             sort_action='native',
+             sort_mode="multi",
+             column_selectable="single",
+             row_selectable="multi",
+             row_deletable=True,
+             selected_columns=[],
+             selected_rows=[],
+             hidden_columns=['LastDayWeek', 'week'],
+            #  page_action="native",
+            #  page_current= 0,
+             page_size= 5,
+             style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
+            #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
+            style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
+            tooltip_data=[
+            {
+                column: {'value': str(value), 'type': 'markdown'}
+                for column, value in row.items()
+            } for row in df_temp.to_dict('records')
+            ],
+            tooltip_header={i: i for i in df_temp.columns},
+    tooltip_duration=None
+        )
+    ])
 
 
 @app.callback(
     Output('availability-radio-resistance', 'options'),
     Input('availability-radio-resistance', 'value'))
 def set_products_options(selected_country):
-    print(selected_country)
     return [{'label': i, 'value': i} for i in resistance_files]
+
+
+
+@app.callback(
+    Output('resistance-input-table', 'children'),
+    [Input('availability-radio-resistance', 'value'),
+    Input('slider', 'value')
+    ])
+def set_display_table(selected_resistance_matrix, month_val):
+    dff = load_matrix(resistance_path, selected_resistance_matrix)
+    # if (month_val):
+    #     dff = dff[dff[MONTH] == month_val]
+    # elif month_val == 0:
+    #     dff = dff
+    df_temp = dff
+    return html.Div([
+        dash_table.DataTable(
+            id='main-table',
+            columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+             data=df_temp.to_dict('rows'),
+             editable=True,
+             filter_action='native',
+             sort_action='native',
+             sort_mode="multi",
+             column_selectable="single",
+             row_selectable="multi",
+             row_deletable=True,
+             selected_columns=[],
+             selected_rows=[],
+             hidden_columns=['LastDayWeek', 'week'],
+            #  page_action="native",
+            #  page_current= 0,
+             page_size= 5,
+             style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
+            #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
+            style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
+            tooltip_data=[
+            {
+                column: {'value': str(value), 'type': 'markdown'}
+                for column, value in row.items()
+            } for row in df_temp.to_dict('records')
+            ],
+            tooltip_header={i: i for i in df_temp.columns},
+    tooltip_duration=None
+        )
+    ])
 
 
 
@@ -222,6 +331,113 @@ def update_slider(value):
     if value == 0:
         return "Αποτελέσματα για όλους τους μήνες."
     return "Επιλέξατε τον {}o μήνα".format(value)
+
+
+
+@app.callback(
+    Output('container-button-basic', 'children'),
+    [Input('availability-radio-prods-cons', 'value'),
+     Input('availability-radio-resistance', 'value'),
+     Input('execution-button', 'n_clicks')])
+def update_output(prod_cons_matrix, resistance_matrix, click_value):
+    prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
+    resistance_input = str(resistance_path) + str(resistance_matrix)
+    if click_value > 0:
+        results = fs_model.four_step_model(prod_cons_input, resistance_input, 0.1)
+        dff = load_matrix(results_path, results_filepath)
+        df_temp = dff
+        return html.Div([
+            dash_table.DataTable(
+                id='button-table',
+                columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+                data=df_temp.to_dict('rows'),
+                editable=True,
+                filter_action='native',
+                sort_action='native',
+                sort_mode="multi",
+                column_selectable="single",
+                row_selectable="multi",
+                row_deletable=True,
+                selected_columns=[],
+                selected_rows=[],
+                hidden_columns=['LastDayWeek', 'week'],
+                #  page_action="native",
+                #  page_current= 0,
+                page_size= 15,
+                style_table={
+                    'maxHeight': '50%',
+                    'overflowY': 'scroll',
+                    'width': '100%',
+                    'minWidth': '10%',
+                },
+                style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+                style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
+                #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
+                style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
+                tooltip_data=[
+                {
+                    column: {'value': str(value), 'type': 'markdown'}
+                    for column, value in row.items()
+                } for row in df_temp.to_dict('records')
+                ],
+                tooltip_header={i: i for i in df_temp.columns},
+        tooltip_duration=None
+            )
+        ])
+    else:
+        return html.Div("Προς υπολογισμό αποτελεσμάτων.")
+
+
+
+@app.callback(
+    Output('four-step-model-matrix', 'children'),
+    [Input('execution-button', 'value')
+    ])
+def set_display_table(clicks):
+    dff = load_matrix(results_path, results_filepath)
+    # if (month_val):
+    #     dff = dff[dff[MONTH] == month_val]
+    # elif month_val == 0:
+    #     dff = dff
+    df_temp = dff
+    return html.Div([
+        dash_table.DataTable(
+            id='main-table',
+            columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+             data=df_temp.to_dict('rows'),
+             editable=True,
+             filter_action='native',
+             sort_action='native',
+             sort_mode="multi",
+             column_selectable="single",
+             row_selectable="multi",
+             row_deletable=True,
+             selected_columns=[],
+             selected_rows=[],
+             hidden_columns=['LastDayWeek', 'week'],
+            #  page_action="native",
+            #  page_current= 0,
+             page_size= 15,
+             style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
+            #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
+            style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
+            tooltip_data=[
+            {
+                column: {'value': str(value), 'type': 'markdown'}
+                for column, value in row.items()
+            } for row in df_temp.to_dict('records')
+            ],
+            tooltip_header={i: i for i in df_temp.columns},
+    tooltip_duration=None
+        )
+    ])
 
 
 
