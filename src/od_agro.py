@@ -45,6 +45,10 @@ help_text = '''
 
 '''
 
+clarifications = '''
+Διευκρινήσεις
+'''
+
 
 def refine_df(df):
     df = df.fillna(0)
@@ -151,6 +155,14 @@ app.layout = html.Div([
                     "margin-right": "auto",
                     # "width":"60%"
                     }),
+                dcc.ConfirmDialogProvider(children=html.Button(
+            'Διευκρινησεις',
+            style={'float': 'right','margin': 'auto','background-color':'white'}
+        ),
+        id='clarifications',
+        message=clarifications,
+    ),
+                html.Div(id='output-provider-clarifications'),
             ], className='four columns'),
         ], className='row',
             style= {'padding-left' : '50px',
@@ -160,7 +172,6 @@ app.layout = html.Div([
                 'background-size':'cover',
                 'background-position':'right'}),
     # tables here
-    html.Hr(),
     html.Div([
         # productions table
         html.Div(id='prod-cons-input-table',  className='tableDiv'),
@@ -185,7 +196,12 @@ app.layout = html.Div([
     # execution button here
     html.Button('Υπολογισμός Κατανομής Μετακινήσεων', id='execution-button', n_clicks=0),
     html.Div(id='container-button-basic', className='tableDiv'),
-    #html.Div(id='four-step-model-matrix',  className='tableDiv'),
+    html.Hr(),
+    html.Div([
+        html.Button('Κατανομή στο Δίκτυο (networkX)', id='networkx-button', n_clicks=0),
+        html.Button('Κατανομή στο Δίκτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
+    ], className='row',),
+    html.Div(id='button-clicked-msg'),
 ])
 
 
@@ -321,6 +337,15 @@ def update_output(submit_n_clicks):
     """
 
 
+@app.callback(Output('output-provider-clarifications', 'children'),
+              Input('clarifications', 'submit_n_clicks'))
+def update_output(submit_n_clicks):
+    """ documentation: https://dash.plotly.com/dash-core-components/confirmdialogprovider"""
+    if not submit_n_clicks:
+        return ''
+    return ''
+
+
 @app.callback(
     Output('output-container-slider', 'children'),
     [Input('slider', 'value')]
@@ -386,56 +411,18 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         return html.Div("Προς υπολογισμό αποτελεσμάτων.")
 
 
-
-@app.callback(
-    Output('four-step-model-matrix', 'children'),
-    [Input('execution-button', 'value')
-    ])
-def set_display_table(clicks):
-    dff = load_matrix(results_path, results_filepath)
-    # if (month_val):
-    #     dff = dff[dff[MONTH] == month_val]
-    # elif month_val == 0:
-    #     dff = dff
-    df_temp = dff
-    return html.Div([
-        dash_table.DataTable(
-            id='main-table',
-            columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
-             data=df_temp.to_dict('rows'),
-             editable=True,
-             filter_action='native',
-             sort_action='native',
-             sort_mode="multi",
-             column_selectable="single",
-             row_selectable="multi",
-             row_deletable=True,
-             selected_columns=[],
-             selected_rows=[],
-             hidden_columns=['LastDayWeek', 'week'],
-            #  page_action="native",
-            #  page_current= 0,
-             page_size= 15,
-             style_table={
-                'maxHeight': '50%',
-                'overflowY': 'scroll',
-                'width': '100%',
-                'minWidth': '10%',
-            },
-            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-            style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
-            #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
-            style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
-            tooltip_data=[
-            {
-                column: {'value': str(value), 'type': 'markdown'}
-                for column, value in row.items()
-            } for row in df_temp.to_dict('records')
-            ],
-            tooltip_header={i: i for i in df_temp.columns},
-    tooltip_duration=None
-        )
-    ])
+@app.callback(Output('button-clicked-msg', 'children'),
+              Input('networkx-button', 'n_clicks'),
+              Input('arcgis-button', 'n_clicks'))
+def displayClick(btn1, btn2):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'networkx-button' in changed_id:
+        msg = 'Networkx clicked'
+    elif 'arcgis-button' in changed_id:
+        msg = 'ArcGIS button clicked'
+    else:
+        msg = 'None of the buttons have been clicked yet'
+    return html.Div(msg)
 
 
 
