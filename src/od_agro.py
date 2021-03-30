@@ -64,9 +64,7 @@ prod_cons_df_path = ''
 prod_cons_df = []
 resistance_df_path = ''
 resistance_df = []
-# doc for image: https://community.plotly.com/t/background-image/21199/5
-#image = 'url(http://147.102.154.65/enirisst/images/ampeli-dash.png)'
-image = 'url("assets/ampeli-dash.png")'
+image = 'url("assets/sitari-dash.png")'
 
 
 chart_types = ['Γράφημα Στήλης', 'Γράφημα Πίτας']
@@ -111,7 +109,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
-    html.H1("Βάση Δεδομένων Πινάκων Κατανάλωσης/Παραγωγής",  style={'textAlign':'center'}),
+    html.H1("Μεταφορές μεταξύ Περιοχών (Μητρώο Προέλευσης/Προορισμού)",  style={'textAlign':'center'}),
     html.Hr(),
     # text here
     html.Div([
@@ -130,7 +128,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Label("ΔΙΑΘΕΣΙΜΟΙ ΠΙΝΑΚΕΣ ΠΑΡΑΓΩΓΗΣ-ΚΑΤΑΝΑΛΩΣΗΣ",
+                html.Label("ΣΤΟΙΧΕΙΑ ΠΑΡΑΓΩΓΗΣ-ΚΑΤΑΝΑΛΩΣΗΣ",
                     style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'margin-left':'auto',
@@ -144,7 +142,7 @@ app.layout = html.Div([
                     }), # style solution here: https://stackoverflow.com/questions/51193845/moving-objects-bar-chart-using-dash-python
             ], className='four columns'),
             html.Div([
-                html.Label("ΜΗΤΡΩΑ ΑΝΤΙΣΤΑΣΗΣ",
+                html.Label("ΜΗΤΡΩΟ ΑΝΤΙΣΤΑΣΗΣ ΜΕΤΑΚΙΝΗΣΕΩΝ",
                         style={'font-weight': 'bold',
                                 'fontSize' : '17px'}),
                 dcc.Dropdown(id='availability-radio-resistance',
@@ -155,12 +153,12 @@ app.layout = html.Div([
                     }),
             ], className='four columns'),
         ], className='row',
-                 style= {'padding-left' : '50px',
-                         'padding-right': '50px'}), # closes the div for first line (matrix and year)
+            style= {'padding-left' : '50px',
+                    'padding-right': '50px'}), # closes the div for first line (matrix and year)
         html.Hr(),
     ],style = {'background-image':image,
-                                    'background-size':'cover',
-                                    'background-position':'right'}),
+                'background-size':'cover',
+                'background-position':'right'}),
     # tables here
     html.Hr(),
     html.Div([
@@ -185,7 +183,7 @@ app.layout = html.Div([
                'color':'#111111'}),
     html.Hr(),
     # execution button here
-    html.Button('Εκτέλεση Μοντέλου 4 Βημάτων', id='execution-button', n_clicks=0),
+    html.Button('Υπολογισμός Κατανομής Μετακινήσεων', id='execution-button', n_clicks=0),
     html.Div(id='container-button-basic', className='tableDiv'),
     #html.Div(id='four-step-model-matrix',  className='tableDiv'),
 ])
