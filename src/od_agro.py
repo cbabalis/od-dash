@@ -8,6 +8,7 @@ from dash_table import DataTable
 from dash.exceptions import PreventUpdate
 import pandas as pd
 import plotly.express as px
+import base64
 # following two lines for reading filenames from disk
 from os import listdir
 from os.path import isfile, join
@@ -70,6 +71,9 @@ prod_cons_df = []
 resistance_df_path = ''
 resistance_df = []
 image = 'url("assets/sitari-dash.png")'
+
+gis_img = cwd + '/src/assets/GIS1b.PNG' # replace with your own image
+encoded_image = base64.b64encode(open(gis_img, 'rb').read())
 
 nuts_names = {'Unnamed: 0':'ΠΕΡΙΦΕΡΕΙΕΣ','0':'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ','1':'ΑΤΤΙΚΗΣ','2':'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ','3':'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ','4':'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','5':'ΗΠΕΙΡΟΥ','6':'ΘΕΣΣΑΛΙΑΣ','7':'ΙΟΝΙΩΝ ΝΗΣΩΝ','8':'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','9':'ΚΡΗΤΗΣ','10':'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ','11':'ΠΕΛΟΠΟΝΝΗΣΟΥ','12':'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ'}
 nuts_list = ['ΠΕΡΙΦΕΡΕΙΕΣ', 'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ', 'ΑΤΤΙΚΗΣ', 'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ', 'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ', 'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ', 'ΗΠΕΙΡΟΥ', 'ΘΕΣΣΑΛΙΑΣ', 'ΙΟΝΙΩΝ ΝΗΣΩΝ', 'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ', 'ΚΡΗΤΗΣ', 'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ', 'ΠΕΛΟΠΟΝΝΗΣΟΥ', 'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ']
@@ -470,9 +474,14 @@ def displayClick(btn1, btn2):
         msg = 'Networkx clicked'
     elif 'arcgis-button' in changed_id:
         msg = 'ArcGIS button clicked'
+        return html.Div([
+            html.Img(src='data:image/png;base64,{}'.format(encoded_image), style={'width': '500px'})
+        ])
+        #msg = html.Img(src=app.get_asset_url('/src/assets/GIS1b.PNG'))
     else:
         msg = 'None of the buttons have been clicked yet'
     return html.Div(msg)
+
 
 
 
