@@ -63,6 +63,7 @@ def load_matrix(my_path, selected_matrix_fp):
     return my_matrix
 
 
+
 sample_df = []
 prod_cons_df_path = ''
 prod_cons_df = []
@@ -70,42 +71,78 @@ resistance_df_path = ''
 resistance_df = []
 image = 'url("assets/sitari-dash.png")'
 
+nuts_names = {'Unnamed: 0':'ΠΕΡΙΦΕΡΕΙΕΣ','0':'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ','1':'ΑΤΤΙΚΗΣ','2':'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ','3':'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ','4':'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','5':'ΗΠΕΙΡΟΥ','6':'ΘΕΣΣΑΛΙΑΣ','7':'ΙΟΝΙΩΝ ΝΗΣΩΝ','8':'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','9':'ΚΡΗΤΗΣ','10':'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ','11':'ΠΕΛΟΠΟΝΝΗΣΟΥ','12':'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ'}
+nuts_list = ['ΠΕΡΙΦΕΡΕΙΕΣ', 'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ', 'ΑΤΤΙΚΗΣ', 'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ', 'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ', 'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ', 'ΗΠΕΙΡΟΥ', 'ΘΕΣΣΑΛΙΑΣ', 'ΙΟΝΙΩΝ ΝΗΣΩΝ', 'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ', 'ΚΡΗΤΗΣ', 'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ', 'ΠΕΛΟΠΟΝΝΗΣΟΥ', 'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ']
+
+
 
 chart_types = ['Γράφημα Στήλης', 'Γράφημα Πίτας']
 month_dict = {0: 'Όλοι οι μήνες', 1:'Ιανουάριος', 2:'Φεβρουάριος', 3:'Μάρτιος', 4:'Απρίλιος', 5:'Μάιος', 6:'Ιούνιος', 7:'Ιούλιος', 8:'Αύγουστος', 9:'Σεπτέμβριος', 10:'Οκτώβριος', 11:'Νοέμβριος', 12:'Δεκέμβριος'}
 
 
-def get_bar_figure(dff, x_col, y_col, col_sum):
-    fig = px.bar(dff, x=x_col, y=y_col, color=col_sum)
-
-    fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0}, hovermode='closest',
-        #title= u'Διάγραμμα μεταβλητών {} και {}'.format(x_col,y_col),
-        font=dict(
-        family="Courier New, monospace",
-        size=15,
-        color="RebeccaPurple"
-    ))
+def modify_row_titles(df, names, mod_col='Unnamed: 0'):
+    # copy the names dictionary and drop the first element
+    row_names = names
+    row_names.pop(0)
+    # replace the first column name (which is the same as the first element) with new values
+    df[mod_col] = row_names
+    # return the new dictionary
+    return df
     
-    fig.update_traces( textposition='auto')
-
-    fig.update_xaxes(title=y_col)
-
-    fig.update_yaxes(title=col_sum)
-    
-    return fig
 
 
-def get_pie_figure(dff, x_col, col_sum, y_col):
-    fig = px.pie(dff, values=col_sum, names=y_col)
-    fig.update_traces(textposition='inside', textinfo='percent', hoverinfo='label+value', textfont_size=20)
-    fig.update_layout(uniformtext_minsize=20, uniformtext_mode='hide',
-        font=dict(
-        family="Courier New, monospace",
-        size=15,
-        color="RebeccaPurple"
-    ))
-    return fig
+def discrete_background_color_bins(df, n_bins=9, columns='all'):
+    import colorlover
+    bounds = [i * (1.0 / n_bins) for i in range(n_bins + 1)]
+    if columns == 'all':
+        if 'id' in df:
+            df_numeric_columns = df.select_dtypes('number').drop(['id'], axis=1)
+        else:
+            df_numeric_columns = df.select_dtypes('number')
+    else:
+        df_numeric_columns = df[columns]
+    df_max = df_numeric_columns.max().max()
+    df_min = df_numeric_columns.min().min()
+    ranges = [
+        ((df_max - df_min) * i) + df_min
+        for i in bounds
+    ]
+    styles = []
+    legend = []
+    for i in range(1, len(bounds)):
+        min_bound = ranges[i - 1]
+        max_bound = ranges[i]
+        backgroundColor = colorlover.scales[str(n_bins)]['seq']['Blues'][i - 1]
+        color = 'white' if i > len(bounds) / 2. else 'inherit'
+        #backgroundColor = colorlover.scales[str(n_bins+4)]['div']['RdYlGn'][2:-2][i - 1]
+        #color = 'black'
 
+        for column in df_numeric_columns:
+            styles.append({
+                'if': {
+                    'filter_query': (
+                        '{{{column}}} >= {min_bound}' +
+                        (' && {{{column}}} < {max_bound}' if (i < len(bounds) - 1) else '')
+                    ).format(column=column, min_bound=min_bound, max_bound=max_bound),
+                    'column_id': column
+                },
+                'backgroundColor': backgroundColor,
+                'color': color
+            })
+        legend.append(
+            html.Div(style={'display': 'inline-block', 'width': '60px'}, children=[
+                html.Div(
+                    style={
+                        'backgroundColor': backgroundColor,
+                        'borderLeft': '1px rgb(50, 50, 50) solid',
+                        'height': '10px'
+                    }
+                ),
+                html.Small(round(min_bound, 2), style={'paddingLeft': '2px'})
+            ])
+        )
+
+    return (styles, html.Div(legend, style={'padding': '5px 0 5px 0'}))
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -288,7 +325,8 @@ def set_display_table(selected_resistance_matrix, month_val):
     return html.Div([
         dash_table.DataTable(
             id='main-table',
-            columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+            #columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+            columns=[{'name':val, 'id':key} for key, val in nuts_names.items()],
              data=df_temp.to_dict('rows'),
              editable=True,
              filter_action='native',
@@ -369,44 +407,56 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         results = fs_model.four_step_model(prod_cons_input, resistance_input, 0.1)
         dff = load_matrix(results_path, results_filepath)
         df_temp = dff
+        (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
+        df_temp = modify_row_titles(df_temp, nuts_list)
         return html.Div([
-            dash_table.DataTable(
-                id='button-table',
-                columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
-                data=df_temp.to_dict('rows'),
-                editable=True,
-                filter_action='native',
-                sort_action='native',
-                sort_mode="multi",
-                column_selectable="single",
-                row_selectable="multi",
-                row_deletable=True,
-                selected_columns=[],
-                selected_rows=[],
-                hidden_columns=['LastDayWeek', 'week'],
-                #  page_action="native",
-                #  page_current= 0,
-                page_size= 15,
-                style_table={
-                    'maxHeight': '50%',
-                    'overflowY': 'scroll',
-                    'width': '100%',
-                    'minWidth': '10%',
-                },
-                style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-                style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
-                #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
-                style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
-                tooltip_data=[
-                {
-                    column: {'value': str(value), 'type': 'markdown'}
-                    for column, value in row.items()
-                } for row in df_temp.to_dict('records')
-                ],
-                tooltip_header={i: i for i in df_temp.columns},
-        tooltip_duration=None
-            )
+            html.Div(legend, style={'float': 'right'}),
+    dash_table.DataTable(
+        data=df_temp.to_dict('records'),
+        sort_action='native',
+        columns=[{'name':val, 'id':key} for key, val in nuts_names.items()],
+        #columns=[{'name': i, 'id': i} for i in df_temp.columns],
+        style_data_conditional=styles
+    ),
         ])
+        # return html.Div([
+        #     dash_table.DataTable(
+        #         id='button-table',
+        #         columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+        #         data=df_temp.to_dict('rows'),
+        #         editable=True,
+        #         filter_action='native',
+        #         sort_action='native',
+        #         sort_mode="multi",
+        #         column_selectable="single",
+        #         row_selectable="multi",
+        #         row_deletable=True,
+        #         selected_columns=[],
+        #         selected_rows=[],
+        #         hidden_columns=['LastDayWeek', 'week'],
+        #         #  page_action="native",
+        #         #  page_current= 0,
+        #         page_size= 15,
+        #         style_table={
+        #             'maxHeight': '50%',
+        #             'overflowY': 'scroll',
+        #             'width': '100%',
+        #             'minWidth': '10%',
+        #         },
+        #         style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+        #         style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
+        #         #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
+        #         style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
+        #         tooltip_data=[
+        #         {
+        #             column: {'value': str(value), 'type': 'markdown'}
+        #             for column, value in row.items()
+        #         } for row in df_temp.to_dict('records')
+        #         ],
+        #         tooltip_header={i: i for i in df_temp.columns},
+        # tooltip_duration=None
+        #     )
+        # ])
     else:
         return html.Div("Προς υπολογισμό αποτελεσμάτων.")
 
