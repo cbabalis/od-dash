@@ -9,6 +9,7 @@ from dash.exceptions import PreventUpdate
 import pandas as pd
 import plotly.express as px
 import base64
+import plotly.graph_objects as go
 # following two lines for reading filenames from disk
 from os import listdir
 from os.path import isfile, join
@@ -72,7 +73,7 @@ resistance_df_path = ''
 resistance_df = []
 image = 'url("assets/sitari-dash.png")'
 
-gis_img = cwd + '/src/assets/GIS1b.PNG' # replace with your own image
+gis_img = cwd + '/src/assets/GIS1b.png' # replace with your own image
 encoded_image = base64.b64encode(open(gis_img, 'rb').read())
 
 nuts_names = {'Unnamed: 0':'ΠΕΡΙΦΕΡΕΙΕΣ','0':'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ','1':'ΑΤΤΙΚΗΣ','2':'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ','3':'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ','4':'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','5':'ΗΠΕΙΡΟΥ','6':'ΘΕΣΣΑΛΙΑΣ','7':'ΙΟΝΙΩΝ ΝΗΣΩΝ','8':'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','9':'ΚΡΗΤΗΣ','10':'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ','11':'ΠΕΛΟΠΟΝΝΗΣΟΥ','12':'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ'}
@@ -147,6 +148,7 @@ def discrete_background_color_bins(df, n_bins=9, columns='all'):
         )
 
     return (styles, html.Div(legend, style={'padding': '5px 0 5px 0'}))
+
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -474,10 +476,7 @@ def displayClick(btn1, btn2):
         msg = 'Networkx clicked'
     elif 'arcgis-button' in changed_id:
         msg = 'ArcGIS button clicked'
-        return html.Div([
-            html.Img(src='data:image/png;base64,{}'.format(encoded_image), style={'width': '500px'})
-        ])
-        #msg = html.Img(src=app.get_asset_url('/src/assets/GIS1b.PNG'))
+        msg = html.Img(src=app.get_asset_url('GIS1b.png'))
     else:
         msg = 'None of the buttons have been clicked yet'
     return html.Div(msg)
