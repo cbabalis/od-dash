@@ -160,7 +160,7 @@ app.layout = html.Div([
     html.Hr(),
     # text here
     html.Div([
-    dcc.Markdown(matrix_text),
+    #dcc.Markdown(matrix_text),
     dcc.ConfirmDialogProvider(children=html.Button(
             'Οδηγίες Χρήσης',
             style={'float': 'right','margin': 'auto'}
@@ -237,13 +237,21 @@ app.layout = html.Div([
                'color':'#111111'}),
     html.Hr(),
     # execution button here
-    html.Button('Υπολογισμός Κατανομής Μετακινήσεων', id='execution-button', n_clicks=0),
+    html.Div([
+    html.Button('Υπολογισμός Κατανομής Μετακινήσεων', id='execution-button',n_clicks=0),
+    ], style={'margin-bottom': '10px',
+              'textAlign':'center',
+              'width': '220px',
+              'margin':'auto'}),
     html.Div(id='container-button-basic', className='tableDiv'),
     html.Hr(),
     html.Div([
         html.Button('Κατανομή στο Δίκτυο (networkX)', id='networkx-button', n_clicks=0),
         html.Button('Κατανομή στο Δίκτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
-    ], className='row',),
+    ], className='row', style={'margin-bottom': '10px',
+              'textAlign':'center',
+              'width': '1020px',
+              'margin':'auto'}),
     html.Div(id='button-clicked-msg'),
 ])
 
