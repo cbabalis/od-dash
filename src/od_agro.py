@@ -10,6 +10,9 @@ import pandas as pd
 import plotly.express as px
 import base64
 import plotly.graph_objects as go
+# flask
+from urllib.parse import quote as urlquote
+from flask import Flask, send_from_directory
 # following two lines for reading filenames from disk
 from os import listdir
 from os.path import isfile, join
@@ -17,15 +20,15 @@ import os
 cwd = os.getcwd()
 import four_step_model as fs_model
 
-
 import pdb
+
 
 my_path = 'data/'
 onlyfiles = [f for f in listdir(my_path) if isfile(join(my_path, f))]
 
 
 prod_cons_path = 'data/prod_cons/'
-prod_cons_files = [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))]
+#prod_cons_files = uploaded_files(prod_cons_path) # [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))]
 
 resistance_path = 'data/resistance/'
 resistance_files = [f for f in listdir(resistance_path) if isfile(join(resistance_path, f))]
@@ -63,7 +66,6 @@ def load_matrix(my_path, selected_matrix_fp):
     matrix_filepath = str(my_path) + str(selected_matrix_fp)
     my_matrix = pd.read_csv(matrix_filepath, delimiter='\t')
     return my_matrix
-
 
 
 sample_df = []
@@ -217,9 +219,11 @@ app.layout = html.Div([
     # tables here
     html.Div([
         # productions table
+        html.Label('Παραγωγή και κατανάλωση ανά γεωγραφική ενότητα'),
         html.Div(id='prod-cons-input-table',  className='tableDiv'),
         # resistance table
         html.Hr(),
+        html.Label('Mητρώο αντίστασης μετακινήσεων μεταξύ γεωγραφικών ενοτήτων'),
         html.Div(id='resistance-input-table',  className='tableDiv'),
     ]),
     html.Div([
@@ -261,6 +265,7 @@ app.layout = html.Div([
     Input('availability-radio-prods-cons', 'value'))
 def set_products_options(selected_country):
     #print(selected_country)
+    prod_cons_files = [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))] #uploaded_files(prod_cons_path)
     return [{'label': i, 'value': i} for i in prod_cons_files]
 
 
@@ -336,11 +341,13 @@ def set_display_table(selected_resistance_matrix, month_val):
     # elif month_val == 0:
     #     dff = dff
     df_temp = dff
+    nuts_names_temp = nuts_names
+    del nuts_names_temp['Unnamed: 0']
     return html.Div([
         dash_table.DataTable(
             id='main-table',
             #columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
-            columns=[{'name':val, 'id':key} for key, val in nuts_names.items()],
+            columns=[{'name':val, 'id':key} for key, val in nuts_names_temp.items()],
              data=df_temp.to_dict('rows'),
              editable=True,
              filter_action='native',
