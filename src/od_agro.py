@@ -437,6 +437,10 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         sort_action='native',
         columns=[{'name':val, 'id':key} for key, val in nuts_names.items()],
         #columns=[{'name': i, 'id': i} for i in df_temp.columns],
+        style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+        editable=True,
+        filter_action='native',
+        row_selectable="multi",
         style_data_conditional=styles
     ),
         ])
