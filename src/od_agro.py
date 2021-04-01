@@ -342,7 +342,8 @@ def set_display_table(selected_resistance_matrix, month_val):
     #     dff = dff
     df_temp = dff
     nuts_names_temp = nuts_names
-    del nuts_names_temp['Unnamed: 0']
+    if  nuts_names_temp['Unnamed: 0']:
+        del nuts_names_temp['Unnamed: 0']
     return html.Div([
         dash_table.DataTable(
             id='main-table',
@@ -483,7 +484,7 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         #     )
         # ])
     else:
-        return html.Div("Προς υπολογισμό αποτελεσμάτων.")
+        return html.Div("Για αποτελέσματα πατήστε το κουμπί 'Υπολογισμός Κατανομής Μετακινήσεων'.")
 
 
 @app.callback(Output('button-clicked-msg', 'children'),
