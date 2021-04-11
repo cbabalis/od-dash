@@ -91,7 +91,7 @@ month_dict = {0: 'Όλοι οι μήνες', 1:'Ιανουάριος', 2:'Φεβ
 
 def modify_row_titles(df, names, mod_col='Unnamed: 0'):
     # copy the names dictionary and drop the first element
-    row_names = names
+     row_names = [elem for elem in names]
     row_names.pop(0)
     # replace the first column name (which is the same as the first element) with new values
     df[mod_col] = row_names
