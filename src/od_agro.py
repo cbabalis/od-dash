@@ -228,19 +228,6 @@ app.layout = html.Div([
         html.Label('Mητρώο αντίστασης μετακινήσεων μεταξύ γεωγραφικών ενοτήτων'),
         html.Div(id='resistance-input-table',  className='tableDiv'),
     ]),
-    html.Div([
-    html.H5("Επιλογή Περιόδου"),
-    dcc.Slider(id='slider',
-                    min=1,
-                    max=12,
-                    step=1,
-                    marks= month_dict,#{i: str(i) for i in range(0, 12)},
-                    value=0),
-    html.Div(id='output-container-slider'),
-    ],  style={'backgroundColor':'#CEFFBD',
-               'font-weight': 'bold',
-               'fontSize' : '17px',
-               'color':'#111111'}),
     html.Hr(),
     # execution button here
     html.Div([
@@ -274,9 +261,8 @@ def set_products_options(selected_country):
 @app.callback(
     Output('prod-cons-input-table', 'children'),
     [Input('availability-radio-prods-cons', 'value'),
-    Input('slider', 'value')
     ])
-def set_display_table(selected_prod_cons_matrix, month_val):
+def set_display_table(selected_prod_cons_matrix):
     dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
     # if (month_val):
     #     dff = dff[dff[MONTH] == month_val]
@@ -334,9 +320,8 @@ def set_products_options(selected_country):
 @app.callback(
     Output('resistance-input-table', 'children'),
     [Input('availability-radio-resistance', 'value'),
-    Input('slider', 'value')
     ])
-def set_display_table(selected_resistance_matrix, month_val):
+def set_display_table(selected_resistance_matrix):
     dff = load_matrix(resistance_path, selected_resistance_matrix)
     # if (month_val):
     #     dff = dff[dff[MONTH] == month_val]
@@ -406,17 +391,6 @@ def update_output(submit_n_clicks):
     if not submit_n_clicks:
         return ''
     return ''
-
-
-@app.callback(
-    Output('output-container-slider', 'children'),
-    [Input('slider', 'value')]
-)
-def update_slider(value):
-    if value == 0:
-        return "Αποτελέσματα για όλους τους μήνες."
-    return "Επιλέξατε τον {}o μήνα".format(value)
-
 
 
 @app.callback(
