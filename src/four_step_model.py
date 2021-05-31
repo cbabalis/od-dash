@@ -148,3 +148,7 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage):
     # return the path of the new matrix to show as path
     return results_file_path
 
+
+
+if __name__ == "__main__":
+    app.run_server(debug=False, host='147.102.154.65', port=8056)
