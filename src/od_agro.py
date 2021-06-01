@@ -329,7 +329,8 @@ def set_display_table(selected_resistance_matrix):
     #     dff = dff
     df_temp = dff
     nuts_names_temp = nuts_names
-    if  nuts_names_temp['Unnamed: 0']:
+    #if  nuts_names_temp['Unnamed: 0']:
+    if 'Unnamed: 0' in nuts_names_temp.keys():
         del nuts_names_temp['Unnamed: 0']
     return html.Div([
         dash_table.DataTable(
