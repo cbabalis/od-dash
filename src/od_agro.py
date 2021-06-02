@@ -18,7 +18,7 @@ from os import listdir
 from os.path import isfile, join
 import os
 cwd = os.getcwd()
-import four_step_model as fs_model
+import four_step_model_updated as fs_model
 
 import pdb
 
@@ -62,11 +62,11 @@ def refine_df(df):
     return df
 
 
-def load_matrix(my_path, selected_matrix_fp):
+def load_matrix(my_path, selected_matrix_fp, delim='\t'):
     if not my_path or not selected_matrix_fp:
         print("No matrix to load")
     matrix_filepath = str(my_path) + str(selected_matrix_fp)
-    my_matrix = pd.read_csv(matrix_filepath, delimiter='\t')
+    my_matrix = pd.read_csv(matrix_filepath, delimiter=delim)
     return my_matrix
 
 
@@ -83,6 +83,7 @@ encoded_image = base64.b64encode(open(gis_img, 'rb').read())
 nuts_names = {'Unnamed: 0':'ΠΕΡΙΦΕΡΕΙΕΣ','0':'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ','1':'ΑΤΤΙΚΗΣ','2':'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ','3':'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ','4':'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','5':'ΗΠΕΙΡΟΥ','6':'ΘΕΣΣΑΛΙΑΣ','7':'ΙΟΝΙΩΝ ΝΗΣΩΝ','8':'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ','9':'ΚΡΗΤΗΣ','10':'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ','11':'ΠΕΛΟΠΟΝΝΗΣΟΥ','12':'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ'}
 nuts_list = ['ΠΕΡΙΦΕΡΕΙΕΣ', 'ΑΝΑΤΟΛΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ ΚΑΙ ΘΡΑΚΗΣ', 'ΑΤΤΙΚΗΣ', 'ΒΟΡΕΙΟΥ ΑΙΓΑΙΟΥ', 'ΔΥΤΙΚΗΣ ΕΛΛΑΔΑΣ', 'ΔΥΤΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ', 'ΗΠΕΙΡΟΥ', 'ΘΕΣΣΑΛΙΑΣ', 'ΙΟΝΙΩΝ ΝΗΣΩΝ', 'ΚΕΝΤΡΙΚΗΣ ΜΑΚΕΔΟΝΙΑΣ', 'ΚΡΗΤΗΣ', 'ΝΟΤΙΟΥ ΑΙΓΑΙΟΥ', 'ΠΕΛΟΠΟΝΝΗΣΟΥ', 'ΣΤΕΡΕΑΣ ΕΛΛΑΔΑΣ']
 
+resistance_title_names = []
 
 
 chart_types = ['Γράφημα Στήλης', 'Γράφημα Πίτας']
@@ -92,11 +93,20 @@ month_dict = {0: 'Όλοι οι μήνες', 1:'Ιανουάριος', 2:'Φεβ
 def modify_row_titles(df, names, mod_col='Unnamed: 0'):
     # copy the names dictionary and drop the first element
     row_names = [elem for elem in names]
-    row_names.pop(0)
+    if 'Unnamed: 0' in row_names:
+        del row_names['Unnamed: 0']
     # replace the first column name (which is the same as the first element) with new values
     df[mod_col] = row_names
     # return the new dictionary
     return df
+
+
+def _get_od_column_names(resistance_title_names, nuts_names, df):
+    if not resistance_title_names or len(df) == 13:
+        return [{'name':val, 'id':key} for key, val in nuts_names.items()]
+    else:
+        ids_list = [id for id in range(len(resistance_title_names))]
+        return [{'name':val, 'id':key} for key, val in zip(ids_list, resistance_title_names)]
     
 
 
@@ -269,6 +279,10 @@ def set_display_table(selected_prod_cons_matrix):
     # elif month_val == 0:
     #     dff = dff
     df_temp = dff
+    # assign names to a list
+    global resistance_title_names
+    if 'ΠΕΡΙΦΕΡΕΙΑΚΗ ΕΝΟΤΗΤΑ' in df_temp.columns:
+        resistance_title_names = df_temp['ΠΕΡΙΦΕΡΕΙΑΚΗ ΕΝΟΤΗΤΑ'].tolist()
     return html.Div([
         dash_table.DataTable(
             id='main-table',
@@ -332,26 +346,28 @@ def set_display_table(selected_resistance_matrix):
     #if  nuts_names_temp['Unnamed: 0']:
     if 'Unnamed: 0' in nuts_names_temp.keys():
         del nuts_names_temp['Unnamed: 0']
+    od_cols = _get_od_column_names(resistance_title_names, nuts_names_temp, df_temp)
+    pdb.set_trace()
     return html.Div([
         dash_table.DataTable(
-            id='main-table',
+            id='resistance-table',
             #columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
-            columns=[{'name':val, 'id':key} for key, val in nuts_names_temp.items()],
-             data=df_temp.to_dict('rows'),
-             editable=True,
-             filter_action='native',
-             sort_action='native',
-             sort_mode="multi",
-             column_selectable="single",
-             row_selectable="multi",
-             row_deletable=True,
-             selected_columns=[],
-             selected_rows=[],
-             hidden_columns=['LastDayWeek', 'week'],
-            #  page_action="native",
-            #  page_current= 0,
-             page_size= 5,
-             style_table={
+            #columns= [{'name':val, 'id':val, 'hideable':True} for val in resistance_title_names], #[{'name':val, 'id':key} for key, val in nuts_names_temp.items()],
+            columns = od_cols,
+            data=df_temp.to_dict('records'),
+            editable=True,
+            filter_action='native',
+            sort_action='native',
+            sort_mode="multi",
+            column_selectable="single",
+            #row_selectable="multi",
+            row_deletable=True,
+            selected_columns=[],
+            selected_rows=[],
+            page_action="native",
+            page_current= 0,
+            page_size= 5,
+            style_table={
                 'maxHeight': '50%',
                 'overflowY': 'scroll',
                 'width': '100%',
@@ -403,11 +419,12 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
     prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
     resistance_input = str(resistance_path) + str(resistance_matrix)
     if click_value > 0:
-        results = fs_model.four_step_model(prod_cons_input, resistance_input, 0.1)
+        results = fs_model.four_step_model(prod_cons_input, resistance_input, 1)
         dff = load_matrix(results_path, results_filepath)
         df_temp = dff
+        pdb.set_trace()
         (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
-        df_temp = modify_row_titles(df_temp, nuts_list)
+        df_temp = modify_row_titles(df_temp, resistance_title_names) # TODO replaced nuts_list)
         return html.Div([
             html.Div(legend, style={'float': 'right'}),
     dash_table.DataTable(
@@ -422,44 +439,6 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         style_data_conditional=styles
     ),
         ])
-        # return html.Div([
-        #     dash_table.DataTable(
-        #         id='button-table',
-        #         columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
-        #         data=df_temp.to_dict('rows'),
-        #         editable=True,
-        #         filter_action='native',
-        #         sort_action='native',
-        #         sort_mode="multi",
-        #         column_selectable="single",
-        #         row_selectable="multi",
-        #         row_deletable=True,
-        #         selected_columns=[],
-        #         selected_rows=[],
-        #         hidden_columns=['LastDayWeek', 'week'],
-        #         #  page_action="native",
-        #         #  page_current= 0,
-        #         page_size= 15,
-        #         style_table={
-        #             'maxHeight': '50%',
-        #             'overflowY': 'scroll',
-        #             'width': '100%',
-        #             'minWidth': '10%',
-        #         },
-        #         style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-        #         style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
-        #         #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
-        #         style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
-        #         tooltip_data=[
-        #         {
-        #             column: {'value': str(value), 'type': 'markdown'}
-        #             for column, value in row.items()
-        #         } for row in df_temp.to_dict('records')
-        #         ],
-        #         tooltip_header={i: i for i in df_temp.columns},
-        # tooltip_duration=None
-        #     )
-        # ])
     else:
         return html.Div("Για αποτελέσματα πατήστε το κουμπί 'Υπολογισμός Κατανομής Μετακινήσεων'.")
 
@@ -480,4 +459,4 @@ def displayClick(btn1, btn2):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=False, host='147.102.154.65', port=8056)
+    app.run_server(debug=False, port=8056) # host='147.102.154.65', 
