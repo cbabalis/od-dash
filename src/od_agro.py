@@ -19,13 +19,14 @@ from os.path import isfile, join
 import os
 cwd = os.getcwd()
 import four_step_model_updated as fs_model
-
+from dash_extensions import Download
+from dash_extensions.snippets import send_data_frame
 import pdb
 
 
 my_path = 'data/'
 onlyfiles = [f for f in listdir(my_path) if isfile(join(my_path, f))]
-
+download_df = [] # file for downloading
 
 prod_cons_path = 'data/prod_cons/'
 #prod_cons_files = uploaded_files(prod_cons_path) # [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))]
@@ -248,6 +249,12 @@ app.layout = html.Div([
               'margin':'auto'}),
     html.Div(id='container-button-basic', className='tableDiv'),
     html.Hr(),
+    html.Div(
+        [
+            html.Button("Κατέβασμα δεδομένων (CSV)", id="btn_csv"),
+            Download(id="download-dataframe-csv"),
+        ],
+    ),
     html.Div([
         html.Button('Κατανομή στο Δίκτυο (networkX)', id='networkx-button', n_clicks=0),
         html.Button('Κατανομή στο Δίκτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
@@ -423,8 +430,11 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         dff = load_matrix(results_path, results_filepath)
         df_temp = dff
         (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
-        #df_temp = modify_row_titles(df_temp, resistance_title_names) # TODO replaced nuts_list)
+        # create results columns' names
         results_cols = _get_od_column_names(resistance_title_names, nuts_names, df_temp)
+        # following two lines are about to create a file for downloading the results
+        global download_df
+        download_df = df_temp
         return html.Div([
             html.Div(legend, style={'float': 'right'}),
     dash_table.DataTable(
@@ -464,6 +474,16 @@ def displayClick(btn1, btn2):
     else:
         msg = 'None of the buttons have been clicked yet'
     return html.Div(msg)
+
+
+@app.callback(
+    Output("download-dataframe-csv", "data"),
+    Input("btn_csv", "n_clicks"),
+    prevent_initial_call=True,
+)
+def func(n_clicks):
+    return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
+
 
 
 if __name__ == "__main__":
