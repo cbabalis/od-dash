@@ -346,8 +346,8 @@ def set_display_table(selected_resistance_matrix):
     #if  nuts_names_temp['Unnamed: 0']:
     if 'Unnamed: 0' in nuts_names_temp.keys():
         del nuts_names_temp['Unnamed: 0']
+    # get names of columns of OD matrix (it is dependent on the prod_cons_ file)
     od_cols = _get_od_column_names(resistance_title_names, nuts_names_temp, df_temp)
-    pdb.set_trace()
     return html.Div([
         dash_table.DataTable(
             id='resistance-table',
@@ -422,16 +422,24 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
         results = fs_model.four_step_model(prod_cons_input, resistance_input, 1)
         dff = load_matrix(results_path, results_filepath)
         df_temp = dff
-        pdb.set_trace()
         (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
-        df_temp = modify_row_titles(df_temp, resistance_title_names) # TODO replaced nuts_list)
+        #df_temp = modify_row_titles(df_temp, resistance_title_names) # TODO replaced nuts_list)
+        results_cols = _get_od_column_names(resistance_title_names, nuts_names, df_temp)
         return html.Div([
             html.Div(legend, style={'float': 'right'}),
     dash_table.DataTable(
         data=df_temp.to_dict('records'),
         sort_action='native',
-        columns=[{'name':val, 'id':key} for key, val in nuts_names.items()],
-        #columns=[{'name': i, 'id': i} for i in df_temp.columns],
+        columns= results_cols,
+        page_action="native",
+        page_current= 0,
+        page_size= 15,
+        style_table={
+            'maxHeight': '50%',
+            'overflowY': 'scroll',
+            'width': '100%',
+            'minWidth': '10%',
+        },
         style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
         editable=True,
         filter_action='native',
