@@ -93,6 +93,7 @@ def is_threshold_satisfied(T, threshold, prods, cons, is_A_turn):
         sums = df.sum(axis=1)
         thres = compute_percentages(sums, prods, threshold, is_A_turn)
     satisfied_thresholds = len(thres[thres['res'] < threshold])
+    #pdb.set_trace()
     if satisfied_thresholds < len(thres):
         return False
     else:
@@ -113,9 +114,16 @@ def compute_threshold(df):
     df['res'] = (df[1] - df[0]) / df[1] * 100
     df['res'] = abs(df['res'])
     # code to check if df[1], df[0] is empty somewhere
-    if df['res'].isnull().values.any():
-        print("empty values are ", df['res'].isnull().sum())
-        df['res'] = df['res'].fillna(0)
+    _fill_col_with_zeros(df, 'res')
+    # if df['res'].isnull().values.any():
+    #     print("empty values are ", df['res'].isnull().sum())
+    #     df['res'] = df['res'].fillna(0)
+
+
+def _fill_col_with_zeros(df, col):
+    if df[col].isnull().values.any():
+        print("empty values are ", df[col].isnull().sum())
+        df[col] = df[col].fillna(0)
 
 
 def test_print(a_word):
