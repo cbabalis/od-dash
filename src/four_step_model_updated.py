@@ -11,8 +11,9 @@ is_A_turn = True
 iterations = 1
 
 
-def read_user_input(prod_cons_tn_fpath, movement_fpath, crit):
+def read_user_input(prod_cons_tn_fpath, movement_fpath, crit, group_by_col):
     prod_cons_tn = pd.read_csv(prod_cons_tn_fpath, delimiter='\t')
+    prod_cons_tn = prod_cons_tn.groupby(group_by_col, as_index=False).sum()
     movement = pd.read_csv(movement_fpath, delimiter='\t')
     crit_percentage = float(crit)
     return prod_cons_tn, movement, crit_percentage
@@ -152,12 +153,12 @@ def read_user_input_xls(prod_cons_tn_fpath, movement_fpath, crit, sheet='for_BAB
 
 
 
-def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage):
+def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕΡΙΦΕΡΕΙΑ'):
     """ serious doc here. missing TODO
     """
     # read input arrays
     prod_cons_fp, mv_fp, pcnt = prod_cons_matrix_fp, antist_fp, pcntage
-    prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt)
+    prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt, group_by_col)
     #test_print([prod_cons_tn, movement, crit_percentage])
     # check if arrays are ok (same length)
     assert is_input_valid(prod_cons_tn, movement, crit_percentage)

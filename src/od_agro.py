@@ -281,10 +281,6 @@ def set_products_options(selected_country):
     ])
 def set_display_table(selected_prod_cons_matrix):
     dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
-    # if (month_val):
-    #     dff = dff[dff[MONTH] == month_val]
-    # elif month_val == 0:
-    #     dff = dff
     df_temp = dff
     # assign names to a list
     global resistance_title_names
@@ -426,7 +422,7 @@ def update_output(prod_cons_matrix, resistance_matrix, click_value):
     prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
     resistance_input = str(resistance_path) + str(resistance_matrix)
     if click_value > 0:
-        results = fs_model.four_step_model(prod_cons_input, resistance_input, 1)
+        results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, group_by_col='ΠΕΡΙΦΕΡΕΙΑ')
         dff = load_matrix(results_path, results_filepath)
         df_temp = dff
         (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
