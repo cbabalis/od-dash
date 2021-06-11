@@ -15,6 +15,7 @@ def read_user_input(prod_cons_tn_fpath, movement_fpath, crit, group_by_col):
     prod_cons_tn = pd.read_csv(prod_cons_tn_fpath, delimiter='\t')
     prod_cons_tn = prod_cons_tn.groupby(group_by_col, as_index=False).sum()
     movement = pd.read_csv(movement_fpath, delimiter='\t')
+    assert len(prod_cons_tn) == len(movement), "productions/consumptions matrix and movement matrix should be of the same length"
     crit_percentage = float(crit)
     return prod_cons_tn, movement, crit_percentage
 

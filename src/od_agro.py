@@ -202,6 +202,20 @@ app.layout = html.Div([
                     "margin-right": "auto",
                     # "width":"60%"
                     }), # style solution here: https://stackoverflow.com/questions/51193845/moving-objects-bar-chart-using-dash-python
+                ## radio button to select by what
+                 html.Label("ΕΠΙΠΕΔΟ ΓΕΩΓΡΑΦΙΚΗΣ ΑΝΑΛΥΣΗΣ",
+                    style={'font-weight': 'bold',
+                            'fontSize' : '17px',
+                            'margin-left':'auto',
+                            'margin-right':'auto',
+                            'display':'block'}),
+                dcc.Dropdown(id='region-selection',
+                            style={"display": "block",
+                    "margin-left": "auto",
+                    "margin-right": "auto",
+                    # "width":"60%"
+                    }),
+                ## end of radio button to select by what
             ], className='four columns'),
             html.Div([
                 html.Label("ΜΗΤΡΩΟ ΑΝΤΙΣΤΑΣΗΣ ΜΕΤΑΚΙΝΗΣΕΩΝ",
@@ -273,6 +287,14 @@ def set_products_options(selected_country):
     #print(selected_country)
     prod_cons_files = [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))] #uploaded_files(prod_cons_path)
     return [{'label': i, 'value': i} for i in prod_cons_files]
+
+
+@app.callback(
+    Output('region-selection', 'options'),
+    Input('region-selection', 'value'))
+def set_region_group_by_options(selected_country):
+    region_choices = ['ΠΕΡΙΦΕΡΕΙΑ', 'ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ']
+    return [{'label': i, 'value': i} for i in region_choices]
 
 
 @app.callback(
@@ -417,44 +439,47 @@ def update_output(submit_n_clicks):
     Output('container-button-basic', 'children'),
     [Input('availability-radio-prods-cons', 'value'),
      Input('availability-radio-resistance', 'value'),
-     Input('execution-button', 'n_clicks')])
-def update_output(prod_cons_matrix, resistance_matrix, click_value):
+     Input('execution-button', 'n_clicks'),
+     Input('region-selection', 'value')])
+def update_output(prod_cons_matrix, resistance_matrix, click_value, region_lvl):
     prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
     resistance_input = str(resistance_path) + str(resistance_matrix)
-    if click_value > 0:
-        results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, group_by_col='ΠΕΡΙΦΕΡΕΙΑ')
-        dff = load_matrix(results_path, results_filepath)
-        df_temp = dff
-        (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
-        # create results columns' names
-        results_cols = _get_od_column_names(resistance_title_names, nuts_names, df_temp)
-        # following two lines are about to create a file for downloading the results
-        global download_df
-        download_df = df_temp
-        return html.Div([
-            html.Div(legend, style={'float': 'right'}),
-    dash_table.DataTable(
-        data=df_temp.to_dict('records'),
-        sort_action='native',
-        columns= results_cols,
-        page_action="native",
-        page_current= 0,
-        page_size= 15,
-        style_table={
-            'maxHeight': '50%',
-            'overflowY': 'scroll',
-            'width': '100%',
-            'minWidth': '10%',
-        },
-        style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-        editable=True,
-        filter_action='native',
-        row_selectable="multi",
-        style_data_conditional=styles
-    ),
-        ])
-    else:
-        return html.Div("Για αποτελέσματα πατήστε το κουμπί 'Υπολογισμός Κατανομής Μετακινήσεων'.")
+    if not click_value:
+        return dash.no_update
+    #elif click_value > 0:
+    results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, group_by_col=region_lvl)
+    dff = load_matrix(results_path, results_filepath)
+    df_temp = dff
+    (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
+    # create results columns' names
+    results_cols = _get_od_column_names(resistance_title_names, nuts_names, df_temp)
+    # following two lines are about to create a file for downloading the results
+    global download_df
+    download_df = df_temp
+    return html.Div([
+        html.Div(legend, style={'float': 'right'}),
+        dash_table.DataTable(
+            data=df_temp.to_dict('records'),
+            sort_action='native',
+            columns= results_cols,
+            page_action="native",
+            page_current= 0,
+            page_size= 15,
+            style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            editable=True,
+            filter_action='native',
+            row_selectable="multi",
+            style_data_conditional=styles
+        ),
+    ])
+    #else:
+    #    return html.Div("Για αποτελέσματα πατήστε το κουμπί 'Υπολογισμός Κατανομής Μετακινήσεων'.")
 
 
 @app.callback(Output('button-clicked-msg', 'children'),
