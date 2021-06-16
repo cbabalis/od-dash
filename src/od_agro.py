@@ -265,7 +265,7 @@ app.layout = html.Div([
     html.Hr(),
     html.Div(
         [
-            html.Button("Κατέβασμα δεδομένων (CSV)", id="btn_csv"),
+            html.Button("Κατεβασμα δεδομένων (CSV)", id="btn_csv"),
             Download(id="download-dataframe-csv"),
         ],
     ),
@@ -314,7 +314,6 @@ def set_display_table(selected_prod_cons_matrix, reg_sel):
     # elif 'ΠΕΡΙΦΕΡΕΙΑ' in df_temp.columns:
     #     resistance_title_names = df_temp['ΠΕΡΙΦΕΡΕΙΑ'].tolist()
     assert resistance_title_names, "resistance title names length is %d" % len(resistance_title_names) # https://stackoverflow.com/questions/1308607/python-assert-improved-introspection-of-failure
-    pdb.set_trace()
     return html.Div([
         dash_table.DataTable(
             id='main-table',
@@ -380,7 +379,8 @@ def set_display_table(selected_resistance_matrix):
         del nuts_names_temp['Unnamed: 0']
     # get names of columns of OD matrix (it is dependent on the prod_cons_ file)
     od_cols = _get_od_column_names(resistance_title_names, nuts_names_temp, df_temp)
-    # TODO assign column names to pandas df
+    assert len(od_cols) == len(df_temp), "titles' length does not match dataframe's length"
+    df_temp.columns = od_cols
     return html.Div([
         dash_table.DataTable(
             id='resistance-table',
@@ -511,6 +511,10 @@ def displayClick(btn1, btn2):
     prevent_initial_call=True,
 )
 def func(n_clicks):
+    assert len(resistance_title_names) == len(download_df), "lengths are not the same: %d, %d" % (len(resistance_title_names), len(download_df))
+    if 'Unnamed: 0' in download_df:
+        del download_df['Unnamed: 0']
+    download_df.columns = resistance_title_names
     return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
 
 
