@@ -300,14 +300,21 @@ def set_region_group_by_options(selected_country):
 @app.callback(
     Output('prod-cons-input-table', 'children'),
     [Input('availability-radio-prods-cons', 'value'),
+     Input('region-selection', 'value'),
     ])
-def set_display_table(selected_prod_cons_matrix):
+def set_display_table(selected_prod_cons_matrix, reg_sel):
     dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
     df_temp = dff
     # assign names to a list
     global resistance_title_names
-    if 'ΠΕΡΙΦΕΡΕΙΑΚΗ ΕΝΟΤΗΤΑ' in df_temp.columns:
-        resistance_title_names = df_temp['ΠΕΡΙΦΕΡΕΙΑΚΗ ΕΝΟΤΗΤΑ'].tolist()
+    if reg_sel in df_temp.columns:
+        resistance_title_names = df_temp[reg_sel].tolist()
+    # if 'ΠΕΡΙΦΕΡΕΙΑΚΗ ΕΝΟΤΗΤΑ' in df_temp.columns:
+    #     resistance_title_names = df_temp['ΠΕΡΙΦΕΡΕΙΑΚΗ ΕΝΟΤΗΤΑ'].tolist()
+    # elif 'ΠΕΡΙΦΕΡΕΙΑ' in df_temp.columns:
+    #     resistance_title_names = df_temp['ΠΕΡΙΦΕΡΕΙΑ'].tolist()
+    assert resistance_title_names, "resistance title names length is %d" % len(resistance_title_names) # https://stackoverflow.com/questions/1308607/python-assert-improved-introspection-of-failure
+    pdb.set_trace()
     return html.Div([
         dash_table.DataTable(
             id='main-table',
@@ -373,6 +380,7 @@ def set_display_table(selected_resistance_matrix):
         del nuts_names_temp['Unnamed: 0']
     # get names of columns of OD matrix (it is dependent on the prod_cons_ file)
     od_cols = _get_od_column_names(resistance_title_names, nuts_names_temp, df_temp)
+    # TODO assign column names to pandas df
     return html.Div([
         dash_table.DataTable(
             id='resistance-table',
