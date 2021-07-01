@@ -55,6 +55,7 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
         iterations += 1
         if iterations > 100:
             break
+    iterations = 1
     return T
 
 
