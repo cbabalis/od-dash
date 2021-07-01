@@ -304,7 +304,7 @@ def set_region_group_by_options(selected_country):
     ])
 def set_display_table(selected_prod_cons_matrix, reg_sel):
     dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
-    df_temp = dff
+    df_temp = dff.round(2)
     # assign names to a list
     global resistance_title_names
     if reg_sel in df_temp.columns:
