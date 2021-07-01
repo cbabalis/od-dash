@@ -445,11 +445,11 @@ def update_output(submit_n_clicks):
 
 @app.callback(
     Output('container-button-basic', 'children'),
-    [Input('availability-radio-prods-cons', 'value'),
-     Input('availability-radio-resistance', 'value'),
-     Input('execution-button', 'n_clicks'),
-     Input('region-selection', 'value')])
-def update_output(prod_cons_matrix, resistance_matrix, click_value, region_lvl):
+    [Input('execution-button', 'n_clicks')],
+    [State('availability-radio-prods-cons', 'value'),
+     State('availability-radio-resistance', 'value'),
+     State('region-selection', 'value')])
+def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl):
     prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
     resistance_input = str(resistance_path) + str(resistance_matrix)
     if not click_value:
@@ -508,14 +508,19 @@ def displayClick(btn1, btn2):
 @app.callback(
     Output("download-dataframe-csv", "data"),
     Input("btn_csv", "n_clicks"),
+    [State('availability-radio-prods-cons', 'value'),
+     State('region-selection', 'value')],
     prevent_initial_call=True,
 )
-def func(n_clicks):
-    assert len(resistance_title_names) == len(download_df), "lengths are not the same: %d, %d" % (len(resistance_title_names), len(download_df))
+def func(n_clicks, prod_cons_matrix, region_lvl):
+    temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
+    resistance_title_cols = temp_dff[region_lvl].unique()
+    resistance_title_cols = resistance_title_cols.tolist()
+    assert len(resistance_title_cols) == len(download_df), "lengths are not the same: %d, %d" % (len(resistance_title_cols), len(download_df))
     if 'Unnamed: 0' in download_df:
         del download_df['Unnamed: 0']
-    download_df.columns = resistance_title_names
-    download_df.insert(0, 'Unnamed: 0', resistance_title_names)
+    download_df.columns = resistance_title_cols
+    download_df.insert(0, 'Unnamed: 0', resistance_title_cols)
     return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
 
 
