@@ -515,6 +515,7 @@ def func(n_clicks):
     if 'Unnamed: 0' in download_df:
         del download_df['Unnamed: 0']
     download_df.columns = resistance_title_names
+    download_df.insert(0, 'Unnamed: 0', resistance_title_names)
     return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
 
 
