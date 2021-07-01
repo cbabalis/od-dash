@@ -53,6 +53,8 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
             is_A_turn = True
             T =  compute_T_i_j(A_i, prods, B_j, cons, movs)
         iterations += 1
+        if iterations > 100:
+            break
     return T
 
 
