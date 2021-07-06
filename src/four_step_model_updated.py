@@ -8,14 +8,13 @@ import pdb
 
 
 is_A_turn = True
-iterations = 1
 
 
 def read_user_input(prod_cons_tn_fpath, movement_fpath, crit, group_by_col):
     prod_cons_tn = pd.read_csv(prod_cons_tn_fpath, delimiter='\t')
     prod_cons_tn = prod_cons_tn.groupby(group_by_col, as_index=False).sum()
     movement = pd.read_csv(movement_fpath, delimiter='\t')
-    assert len(prod_cons_tn) == len(movement), "productions/consumptions matrix and movement matrix should be of the same length"
+    assert len(prod_cons_tn) == len(movement), "prod-cons and movement should be of the same length but it is %s and %s." %(len(prod_cons_tn), len(movement))
     crit_percentage = float(crit)
     return prod_cons_tn, movement, crit_percentage
 
@@ -31,7 +30,7 @@ def is_input_valid(prod_cons_tn, movement, crit_percentage):
 def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
     """ documentation here.
     """
-    global iterations
+    iterations = 0
     # if B_j == 1: then it is the first step. begin.
     if len(set(B_j)) == 1:
         cons = prod_cons_tn['Κατανάλωση'].tolist()
@@ -43,7 +42,6 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
     # if crit_percentage is satsified, then exit else
     # call again compute_4_step_model with different B_j, A_j, curr_matrix
     while not is_threshold_satisfied(T, crit_percentage, prods, cons, is_A_turn):
-    #while iterations < 6:
         if is_A_turn:
             A_i = compute_coefficient(cons, movs, B_j)
             is_A_turn = False
@@ -55,7 +53,7 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
         iterations += 1
         if iterations > 100:
             break
-    iterations = 1
+        print("we 're in iteration number : ", iterations)
     return T
 
 
@@ -98,7 +96,7 @@ def is_threshold_satisfied(T, threshold, prods, cons, is_A_turn):
         sums = df.sum(axis=1)
         thres = compute_percentages(sums, prods, threshold, is_A_turn)
     satisfied_thresholds = len(thres[thres['res'] < threshold])
-    #pdb.set_trace()
+    
     if satisfied_thresholds < len(thres):
         return False
     else:
@@ -156,6 +154,43 @@ def read_user_input_xls(prod_cons_tn_fpath, movement_fpath, crit, sheet='for_BAB
     return prod_cons_tn, movement, crit_percentage
 
 
+def sort_arrays_lexicographically(df_to_sort, df_to_index):
+    """ Method to lexicographically sort an array according to the other.
+    
+    This method sorts the df_to_sort dataframe's rows according to df_to_index
+    dataframe's columns. A detailed example is described below.
+    
+    Example
+    --------------------
+    df_to_sort       df_to_index
+    A  | B  | C  |   a2 | a3 | a1 |
+    a1 | b1 | c1 |   v1 | y1 | z1 |
+    a2 | b2 | c2 |   v2 | y2 | z2 |
+    a3 | b3 | c3 |   v3 | y3 | z3 |
+    
+    The result should be:
+    df_to_sort       df_to_index
+    A  | B  | C  |   a2 | a3 | a1 |
+    a2 | b2 | c2 |   v1 | y1 | z1 |
+    a3 | b3 | c3 |   v2 | y2 | z2 |
+    a2 | b2 | c2 |   v3 | y3 | z3 |
+
+    Args:
+        df_to_sort (pandas dataframe): Dataframe which values should be sorted
+            according to the df_to_index columns
+        df_to_index (pandas dataframe): Dataframe that provides the columns based
+            on which the sorting will take place.
+    """
+    # create the list that will be the sorting index
+    sorter = df_to_index.columns.tolist()
+    sorterIndex = dict(zip(sorter, range(len(sorter))))
+    # sort the column of interest values and return
+    df_to_sort['sorted'] = df_to_sort['ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ'].map(sorterIndex)
+    df_to_sort = df_to_sort.sort_values(['sorted'])
+    # and return the initial dataframe free from additional columns or data.
+    del df_to_sort['sorted']
+    return df_to_sort
+
 
 def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕΡΙΦΕΡΕΙΑ'):
     """ serious doc here. missing TODO
@@ -165,11 +200,11 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕ�
     prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt, group_by_col)
     #test_print([prod_cons_tn, movement, crit_percentage])
     # check if arrays are ok (same length)
+    prod_cons_tn = sort_arrays_lexicographically(prod_cons_tn, movement)
     assert is_input_valid(prod_cons_tn, movement, crit_percentage)
     # do some preliminary work
     B_j = [1 for i in range(0, len(prod_cons_tn))]
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
-    print("iterations are ", iterations)
     results_file_path = 'results/output.csv'
     write_matrix_to_file(T, results_file_path, sep='\t')
     # return the path of the new matrix to show as path
@@ -189,7 +224,6 @@ def main():
     # do some preliminary work
     B_j = [1 for i in range(0, len(prod_cons_tn))]
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
-    print("iterations are ", iterations)
     write_matrix_to_file(T, 'output.csv')
     # run main algorithm
 
