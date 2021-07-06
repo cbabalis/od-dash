@@ -154,7 +154,7 @@ def read_user_input_xls(prod_cons_tn_fpath, movement_fpath, crit, sheet='for_BAB
     return prod_cons_tn, movement, crit_percentage
 
 
-def sort_arrays_lexicographically(df_to_sort, df_to_index):
+def sort_arrays_lexicographically(df_to_sort, df_to_index, group_by_col):
     """ Method to lexicographically sort an array according to the other.
     
     This method sorts the df_to_sort dataframe's rows according to df_to_index
@@ -185,7 +185,7 @@ def sort_arrays_lexicographically(df_to_sort, df_to_index):
     sorter = df_to_index.columns.tolist()
     sorterIndex = dict(zip(sorter, range(len(sorter))))
     # sort the column of interest values and return
-    df_to_sort['sorted'] = df_to_sort['ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ'].map(sorterIndex)
+    df_to_sort['sorted'] = df_to_sort[group_by_col].map(sorterIndex)
     df_to_sort = df_to_sort.sort_values(['sorted'])
     # and return the initial dataframe free from additional columns or data.
     del df_to_sort['sorted']
@@ -200,7 +200,7 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕ�
     prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt, group_by_col)
     #test_print([prod_cons_tn, movement, crit_percentage])
     # check if arrays are ok (same length)
-    prod_cons_tn = sort_arrays_lexicographically(prod_cons_tn, movement)
+    prod_cons_tn = sort_arrays_lexicographically(prod_cons_tn, movement, group_by_col)
     assert is_input_valid(prod_cons_tn, movement, crit_percentage)
     # do some preliminary work
     B_j = [1 for i in range(0, len(prod_cons_tn))]
