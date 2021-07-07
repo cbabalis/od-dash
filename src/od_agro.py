@@ -460,8 +460,11 @@ def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl):
     df_temp = dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
-    results_cols = _get_od_column_names(resistance_title_names, nuts_names, df_temp)
-    # following two lines are about to create a file for downloading the results
+    results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns] #_get_od_column_names(resistance_title_names, nuts_names, df_temp)
+    # following five lines are about to create a file for downloading the results
+    results_index = df_temp.columns.tolist()
+    results_index.pop(0)
+    df_temp['Unnamed: 0'] = results_index
     global download_df
     download_df = df_temp
     return html.Div([
@@ -514,14 +517,16 @@ def displayClick(btn1, btn2):
 )
 def func(n_clicks, prod_cons_matrix, region_lvl):
     temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
-    resistance_title_cols = temp_dff[region_lvl].unique()
-    resistance_title_cols = resistance_title_cols.tolist()
-    assert len(resistance_title_cols) == len(download_df), "lengths are not the same: %d, %d" % (len(resistance_title_cols), len(download_df))
-    if 'Unnamed: 0' in download_df:
-        del download_df['Unnamed: 0']
-    download_df.columns = resistance_title_cols
-    download_df.insert(0, 'Unnamed: 0', resistance_title_cols)
     return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
+    # temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
+    # resistance_title_cols = temp_dff[region_lvl].unique()
+    # resistance_title_cols = resistance_title_cols.tolist()
+    # assert len(resistance_title_cols) == len(download_df), "lengths are not the same: %d, %d" % (len(resistance_title_cols), len(download_df))
+    # if 'Unnamed: 0' in download_df:
+    #     del download_df['Unnamed: 0']
+    # download_df.columns = resistance_title_cols
+    # download_df.insert(0, 'Unnamed: 0', resistance_title_cols)
+    # return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
 
 
 
