@@ -133,8 +133,12 @@ def test_print(a_word):
     print(a_word)
 
 
-def write_matrix_to_file(T, fpath, sep='\t'):
+def write_matrix_to_file(T, fpath, sep='\t', cols=[]):
     df = pd.DataFrame(T)
+    if not cols:
+        print("columns are empty. problem")
+    else:
+        df.columns = cols
     df = df.applymap(downgrade_to_two_dec)
     df.to_csv(fpath, sep=sep)
 
@@ -206,7 +210,7 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕ�
     B_j = [1 for i in range(0, len(prod_cons_tn))]
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
     results_file_path = 'results/output.csv'
-    write_matrix_to_file(T, results_file_path, sep='\t')
+    write_matrix_to_file(T, results_file_path, sep='\t', cols=movement.columns.tolist())
     # return the path of the new matrix to show as path
     return results_file_path
 
