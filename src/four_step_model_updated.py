@@ -3,6 +3,7 @@
 import sys
 import pandas as pd
 import numpy as np
+import math
 
 import pdb
 
@@ -42,6 +43,7 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
     # if crit_percentage is satsified, then exit else
     # call again compute_4_step_model with different B_j, A_j, curr_matrix
     while not is_threshold_satisfied(T, crit_percentage, prods, cons, is_A_turn):
+    #while iterations < 7:
         if is_A_turn:
             A_i = compute_coefficient(cons, movs, B_j)
             is_A_turn = False
@@ -51,7 +53,7 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
             is_A_turn = True
             T =  compute_T_i_j(A_i, prods, B_j, cons, movs)
         iterations += 1
-        if iterations > 100:
+        if iterations > 100 and _has_prods_cons_integrity(T, prods, cons):
             break
         print("we 're in iteration number : ", iterations)
     return T
@@ -101,7 +103,30 @@ def is_threshold_satisfied(T, threshold, prods, cons, is_A_turn):
         return False
     else:
         return True
+
+
+def _has_prods_cons_integrity(T, prods, cons):
+    """ method to check if sum of all rows is equal to sum of all cols.
+    """
+    df = pd.DataFrame(T)
+    # compute total sums of all computed rows and columns
+    col_sum_df = df.sum(axis=0)
+    col_sum = col_sum_df.sum()
+    col_sum = int(col_sum)
     
+    row_sum_df = df.sum(axis=1)
+    row_sum = row_sum_df.sum()
+    row_sum = int(row_sum)
+    
+    # compute initial sums of consumptions and productions respectively
+    col_sum_init = sum(cons)
+    row_sum_init = sum(prods)
+    if not col_sum == int(col_sum_init) or not row_sum == int(row_sum_init):
+        print("ERROR!! current prods sum is ", row_sum, " and initial is ", row_sum_init)
+        return False
+    else:
+        print("GOOD! current prods sum is ", row_sum, " and initial is ", row_sum_init)
+        return True
 
 
 def compute_percentages(sums, tn, threshold, is_A_turn):
