@@ -31,6 +31,8 @@ def is_input_valid(prod_cons_tn, movement, crit_percentage):
 def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
     """ documentation here.
     """
+    # result to be returned
+    final_T = []
     iterations = 0
     # if B_j == 1: then it is the first step. begin.
     if len(set(B_j)) == 1:
@@ -48,15 +50,20 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
             A_i = compute_coefficient(cons, movs, B_j)
             is_A_turn = False
             T = compute_T_i_j(A_i, prods, B_j, cons, movs)
+            if _has_prods_cons_integrity(T, prods, cons):
+                final_T = T
         else:
             B_j = compute_coefficient(prods, movs, A_i)
             is_A_turn = True
             T =  compute_T_i_j(A_i, prods, B_j, cons, movs)
+            if _has_prods_cons_integrity(T, prods, cons):
+                final_T = T
         iterations += 1
         if iterations > 100 and _has_prods_cons_integrity(T, prods, cons):
             break
         print("we 're in iteration number : ", iterations)
-    return T
+    #return T
+    return final_T
 
 
 def compute_coefficient(tn, movement, existing_coef):
