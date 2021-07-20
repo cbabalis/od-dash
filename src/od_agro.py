@@ -455,7 +455,7 @@ def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl):
     if not click_value:
         return dash.no_update
     #elif click_value > 0:
-    results = fs_model.four_step_model(prod_cons_input, resistance_input, 2, group_by_col=region_lvl)
+    results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, group_by_col=region_lvl)
     dff = load_matrix(results_path, results_filepath)
     df_temp = dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
