@@ -257,7 +257,7 @@ app.layout = html.Div([
             html.Label('Ποσοστό εσωτερικής Κατανάλωσης στους νομούς'),
             dcc.Slider(id='internal-movement-slider',
                 min=10,
-                max=70,
+                max=75,
                 value=35,
                 marks={
                     10: {'label': '10%', 'style': {'color': '#77b0b1'}},
@@ -266,7 +266,7 @@ app.layout = html.Div([
                     75: {'label': '75%', 'style': {'color': '#f50'}}
                 }
             ),
-        ], style={'width': '19%', 'display': 'inline-block', 'vertical-align': 'middle'}),
+        ], style={'width': '25%', 'display': 'inline-block', 'vertical-align': 'middle'}),
     ]),
     html.Hr(),
     # execution button here
@@ -394,7 +394,7 @@ def set_display_table(selected_resistance_matrix):
         del nuts_names_temp['Unnamed: 0']
     # get names of columns of OD matrix (it is dependent on the prod_cons_ file)
     od_cols = _get_od_column_names(resistance_title_names, nuts_names_temp, df_temp)
-    assert len(od_cols) == len(df_temp), "titles' length does not match dataframe's length"
+    assert len(od_cols) == len(df_temp), "od cols is %d and df_temp len is %d" %(len(od_cols), len(df_temp))
     df_temp.columns = od_cols
     return html.Div([
         dash_table.DataTable(
