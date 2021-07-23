@@ -51,12 +51,14 @@ def compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j, A_i=[]):
             is_A_turn = False
             T = compute_T_i_j(A_i, prods, B_j, cons, movs)
             if _has_prods_cons_integrity(T, prods, cons):
+                print("it should exit now. from A. iteration is ", iterations)
                 final_T = T
         else:
             B_j = compute_coefficient(prods, movs, A_i)
             is_A_turn = True
             T =  compute_T_i_j(A_i, prods, B_j, cons, movs)
             if _has_prods_cons_integrity(T, prods, cons):
+                print("it should exit now. from b")
                 final_T = T
         iterations += 1
         if iterations > 100 and _has_prods_cons_integrity(T, prods, cons):
@@ -77,9 +79,12 @@ def compute_coefficient(tn, movement, existing_coef):
 def sumprod(li1, li2, l3):
     """ sumproduct between two lists."""
     sumproduct = 0
-    for l1, l2, l3 in zip(li1, li2, l3):
-        sumproduct += l1 * l2 * l3
-    return sumproduct
+    try:
+        for l1, l2, l3 in zip(li1, li2, l3):
+            sumproduct += l1 * l2 * l3
+        return sumproduct
+    except TypeError:
+        print("ERROR: must be numbers!")
 
 
 def compute_T_i_j(A_i, prods, B_j, cons, movement):
@@ -109,6 +114,7 @@ def is_threshold_satisfied(T, threshold, prods, cons, is_A_turn):
     if satisfied_thresholds < len(thres):
         return False
     else:
+        print("threshold is ok!")
         return True
 
 
@@ -182,6 +188,22 @@ def downgrade_to_two_dec(x):
         return x
 
 
+def populate_diagonal_elements(T, prod_cons_tn, int_mvm_col='internal_mvment'):
+    """Method to populate diagonal elements of OD-matrix.
+    OD matrix should have zero as diagonal elements because internal movements
+    are being assigned as special case. populate diagonal elements with the
+    initial quantities.
+
+    Args:
+        T (list): list of lists containing OD matrix.
+        prod_cons_tn (dataframe): Dataframe with productions, consumptions and internal consumptions.
+    """
+    for (idx_i, val_i) in enumerate(T):
+        for (idx_j, val_j) in enumerate(val_i):
+            if idx_j == idx_i:
+                val_i[idx_j] = prod_cons_tn[int_mvm_col].pop(idx_j)
+
+
 def read_user_input_xls(prod_cons_tn_fpath, movement_fpath, crit, sheet='for_BABIS'):
     xls = pd.ExcelFile(prod_cons_tn_fpath) #pd.read_csv(prod_cons_tn_fpath, delimiter='\t')
     prod_cons_tn = pd.read_excel(xls, sheet)
@@ -228,19 +250,78 @@ def sort_arrays_lexicographically(df_to_sort, df_to_index, group_by_col):
     return df_to_sort
 
 
+def apply_internal_movement_factor(prod_cons_tn, internal_mvment_pcnt=35,
+                                   prods_col='Παραγωγές (tn)', cons_col='Κατανάλωση',
+                                   int_mvm_col='internal_mvment'):
+    """Method to apply some values and an algorithm for balancing internal
+    movements.
+
+    Args:
+        prod_cons_tn (dataframe): Productions-Consumptions matrix.
+        internal_mvment_pcnt (int): Percentage for internal consumption of production.
+
+    Returns:
+        DataFrame: Balanced dataframe.
+    """
+    
+    # modify the internal values according to the percentage for internal consumption.
+    prod_cons_tn = _set_internal_movement_column_values(prod_cons_tn, internal_mvment_pcnt,
+                                                        prods_col, cons_col, int_mvm_col)
+    # balance the matrix and returns
+    prod_cons_tn = balance_quantities(prod_cons_tn, prods_col, cons_col)
+    return prod_cons_tn
+
+
+def _set_internal_movement_column_values(df, internal_mvment_pcnt, prods_col, cons_col, int_mvm_col):
+    # create the percentage
+    mvment_pcntg = internal_mvment_pcnt / 100
+    # create a new dataframe column with internal consumptions and
+    # populate it according to the values of each row.
+    df[int_mvm_col] = np.where((df[prods_col] > df[cons_col]),
+                                               df[cons_col] * mvment_pcntg,
+                                               df[prods_col] * mvment_pcntg)
+    # remove from both consumption and production rows the rows of 
+    # internal consumption, accordingly.
+    df[prods_col] = df[prods_col] - df[int_mvm_col]
+    df[cons_col] = df[cons_col] - df[int_mvm_col]
+    return df
+
+
+def balance_quantities(df, prods_col, cons_col):
+    """Method to balance the total sums of quantities for the
+    productions and the consumptions respectively
+
+    Args:
+        prods Dataframe): Dataframe of productions
+        cons (Dataframe): Dataframe of consumptions
+    """
+    # sum up the productions and the consumptions respectively
+    prods_sum = df[prods_col].sum()
+    cons_sum = df[cons_col].sum()
+    balance_factor = cons_sum / prods_sum
+    # apply balance factor to the productions.
+    df[prods_col] = df[prods_col] * balance_factor
+    print("balance factor is ", balance_factor)
+    print("production of all is ", prods_sum, " while consumption is ", cons_sum)
+    return df
+
+
+
 def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕΡΙΦΕΡΕΙΑ'):
     """ serious doc here. missing TODO
     """
     # read input arrays
     prod_cons_fp, mv_fp, pcnt = prod_cons_matrix_fp, antist_fp, pcntage
     prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt, group_by_col)
-    #test_print([prod_cons_tn, movement, crit_percentage])
+    # prepare data (rebalancing, percentage in internal movements, etc)
+    prod_cons_tn = apply_internal_movement_factor(prod_cons_tn, internal_mvment_pcnt=35)
     # check if arrays are ok (same length)
     prod_cons_tn = sort_arrays_lexicographically(prod_cons_tn, movement, group_by_col)
     assert is_input_valid(prod_cons_tn, movement, crit_percentage)
     # do some preliminary work
     B_j = [1 for i in range(0, len(prod_cons_tn))]
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
+    populate_diagonal_elements(T, prod_cons_tn)
     results_file_path = 'results/output.csv'
     write_matrix_to_file(T, results_file_path, sep='\t', cols=movement.columns.tolist())
     # return the path of the new matrix to show as path
