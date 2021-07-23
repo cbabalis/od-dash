@@ -263,7 +263,6 @@ def apply_internal_movement_factor(prod_cons_tn, internal_mvment_pcnt=35,
     Returns:
         DataFrame: Balanced dataframe.
     """
-    
     # modify the internal values according to the percentage for internal consumption.
     prod_cons_tn = _set_internal_movement_column_values(prod_cons_tn, internal_mvment_pcnt,
                                                         prods_col, cons_col, int_mvm_col)
@@ -307,7 +306,7 @@ def balance_quantities(df, prods_col, cons_col):
 
 
 
-def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, group_by_col='ΠΕΡΙΦΕΡΕΙΑ'):
+def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, internal_mvment_pcnt=0, group_by_col='ΠΕΡΙΦΕΡΕΙΑ'):
     """ serious doc here. missing TODO
     """
     # read input arrays

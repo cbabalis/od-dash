@@ -252,6 +252,21 @@ app.layout = html.Div([
         html.Hr(),
         html.Label('Mητρώο αντίστασης μετακινήσεων μεταξύ γεωγραφικών ενοτήτων'),
         html.Div(id='resistance-input-table',  className='tableDiv'),
+        # slider for choosing percentage of internal movements
+        html.Div([
+            html.Label('Ποσοστό εσωτερικής Κατανάλωσης στους νομούς'),
+            dcc.Slider(id='internal-movement-slider',
+                min=10,
+                max=70,
+                value=35,
+                marks={
+                    10: {'label': '10%', 'style': {'color': '#77b0b1'}},
+                    35: {'label': '35%'},
+                    50: {'label': '50%'},
+                    75: {'label': '75%', 'style': {'color': '#f50'}}
+                }
+            ),
+        ], style={'width': '19%', 'display': 'inline-block', 'vertical-align': 'middle'}),
     ]),
     html.Hr(),
     # execution button here
@@ -448,14 +463,15 @@ def update_output(submit_n_clicks):
     [Input('execution-button', 'n_clicks')],
     [State('availability-radio-prods-cons', 'value'),
      State('availability-radio-resistance', 'value'),
-     State('region-selection', 'value')])
-def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl):
+     State('region-selection', 'value'),
+     State('internal-movement-slider', 'value')])
+def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl, internal_pcnt):
     prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
     resistance_input = str(resistance_path) + str(resistance_matrix)
     if not click_value:
         return dash.no_update
     #elif click_value > 0:
-    results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, group_by_col=region_lvl)
+    results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, internal_pcnt, group_by_col=region_lvl)
     dff = load_matrix(results_path, results_filepath)
     df_temp = dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
