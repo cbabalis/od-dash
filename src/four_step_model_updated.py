@@ -313,7 +313,7 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, internal_mvment_pcn
     prod_cons_fp, mv_fp, pcnt = prod_cons_matrix_fp, antist_fp, pcntage
     prod_cons_tn, movement, crit_percentage = read_user_input(prod_cons_fp, mv_fp, pcnt, group_by_col)
     # prepare data (rebalancing, percentage in internal movements, etc)
-    prod_cons_tn = apply_internal_movement_factor(prod_cons_tn, internal_mvment_pcnt=35)
+    prod_cons_tn = apply_internal_movement_factor(prod_cons_tn, internal_mvment_pcnt)
     # check if arrays are ok (same length)
     prod_cons_tn = sort_arrays_lexicographically(prod_cons_tn, movement, group_by_col)
     assert is_input_valid(prod_cons_tn, movement, crit_percentage)
