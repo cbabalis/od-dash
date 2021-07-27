@@ -259,6 +259,7 @@ app.layout = html.Div([
                 min=10,
                 max=75,
                 value=35,
+                step=1,
                 marks={
                     10: {'label': '10%', 'style': {'color': '#77b0b1'}},
                     35: {'label': '35%'},
@@ -268,6 +269,7 @@ app.layout = html.Div([
             ),
         ], style={'width': '25%', 'display': 'inline-block', 'vertical-align': 'middle'}),
     ]),
+    html.Div(id='updatemode-output-container', style={'margin-top': 20}),
     html.Hr(),
     # execution button here
     html.Div([
@@ -456,6 +458,12 @@ def update_output(submit_n_clicks):
     if not submit_n_clicks:
         return ''
     return ''
+
+
+@app.callback(Output('updatemode-output-container', 'children'),
+              Input('internal-movement-slider', 'value'))
+def display_value(value):
+    return 'Ποσοστό: {} % '.format(value)
 
 
 @app.callback(
