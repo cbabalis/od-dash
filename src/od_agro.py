@@ -256,12 +256,12 @@ app.layout = html.Div([
         html.Div([
             html.Label('Ποσοστό εσωτερικής Κατανάλωσης στους νομούς'),
             dcc.Slider(id='internal-movement-slider',
-                min=10,
+                min=0,
                 max=75,
                 value=35,
                 step=1,
                 marks={
-                    10: {'label': '10%', 'style': {'color': '#77b0b1'}},
+                    10: {'label': '0%', 'style': {'color': '#77b0b1'}},
                     35: {'label': '35%'},
                     50: {'label': '50%'},
                     75: {'label': '75%', 'style': {'color': '#f50'}}
