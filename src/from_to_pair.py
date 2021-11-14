@@ -19,7 +19,7 @@ class FromToPair:
         # https://github.com/ustroetz/python-osrm
         self.geometry = result['routes'][0]['geometry']
     
-    def get_geometry():
+    def get_geometry(self):
         if not self.geometry:
             return -1
         else:
