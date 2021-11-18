@@ -14,6 +14,7 @@ import numpy as np
 import network_operations as net_ops
 from from_to_pair import FromToPair
 import graphs.graph_ops as gops
+import networkx as nx
 import pdb
 
 
@@ -178,7 +179,6 @@ def scenario_print_traffic(traffic_fname):
     loaded_list = pickle.load(open_file)
     open_file.close()
     fig = plot_routes_to_map(loaded_list)
-    pdb.set_trace()
 
 
 def simple_scenario(traffic_fname):
@@ -187,8 +187,7 @@ def simple_scenario(traffic_fname):
     open_file = open(traffic_fname, 'wb')
     pickle.dump(mp_pairs, open_file)
     open_file.close()
-    print("file as been created")
-    pdb.set_trace()
+    print("file has been created")
 
 
 def print_flows(products_file, centroids_list_file):
@@ -199,8 +198,7 @@ def print_flows(products_file, centroids_list_file):
         centroids_list_file (str): csv file that contains all centroids.
     """
     nodes_list, edges_list, nx_graph = _get_network_as_graph(centroids_list_file)
-    pdb.set_trace()
-    _get_flows_between_nodes(products_file)
+    _get_flows_between_nodes(products_file, edges_list, nx_graph)
 
 
 def _get_network_as_graph(centroids_list_file):
@@ -210,16 +208,55 @@ def _get_network_as_graph(centroids_list_file):
     return nodes_list, edges_list, net_graph
 
 
-def _get_flows_between_nodes(products_file):
-    pass
+def _get_flows_between_nodes(products_file, edges_list, net_graph):
+    pdf = pd.read_csv(products_file, sep='\t')
+    # drop first two columns as they contain redundant data.
+    pdf = pdf.iloc[:,2:]
+    # get all columns to a list (regional units)
+    regional_units = pdf.columns.tolist()
+    # iterate over all regional units adding the weight.
+    for unit in regional_units:
+        values = pdf[unit].tolist()
+        _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, net_graph)
+    pdb.set_trace()
+
+
+def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, net_graph):
+    """method to add weight to edges consisting the minimum path of a flow.
+    Algorithm:
+    For each <from, to> pair:
+        find the min path (dijkstra) from networkx graph
+        correspond each edge to edges list
+        add the weight to those edges.
+
+    Args:
+        unit ([type]): [description]
+        values ([type]): [description]
+        edges_list ([type]): [description]
+        net_graph ([type]): [description]
+    """
+    # find the min path between the edges
+    for reg_unit, weight in zip(regional_units, values):
+        try:
+            dijkstra_path_nodes = nx.dijkstra_path(net_graph, unit, reg_unit)
+            # assign to each edge the weight corresponding to it
+            for from_idx in range(len(dijkstra_path_nodes)-1):
+                to_idx = from_idx+1
+                for edge in edges_list:
+                    if edge.are_nodes_in_edge(dijkstra_path_nodes[from_idx], dijkstra_path_nodes[to_idx]):
+                        edge.add_to_usage_weight(weight)
+        except nx.NetworkXNoPath:
+            print("No path between ", unit, " and ", reg_unit)
+
 
 
 def main():
-    simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
+    #simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
     #fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
-    pdb.set_trace()
     products_f = '/home/blaxeep/workspace/od-dash/results/mydf.csv'
-    centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/centroids-list.csv'
+    centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
+    print_flows(products_f, centroids_f)
+    pdb.set_trace()
 
 
 if __name__ == '__main__':
