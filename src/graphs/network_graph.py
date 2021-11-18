@@ -9,7 +9,8 @@ class Vertex:
         self.name = name
         self.lat = lat
         self.lon = lon
-        self.neighbors = {}
+        self.neighbors_distance = {}
+        self.neighbors_duration = {}
     
     def set_lat(self, lat):
         self.lat = lat
@@ -17,14 +18,18 @@ class Vertex:
     def set_lon(self, lon):
         self.lon = lon
     
-    def set_new_neighbor(self, name, weight):
+    def set_new_neighbor_dist(self, name, weight):
         """ Method to set a new neighbor to the vertex.
         Args:
             name (str): name of the new neighbor
             weight (int): weight (or cost) for getting from the vertex to
                 this neighbor.
         """
-        self.neighbors[name] = weight
+        self.neighbors_distance[name] = weight
+    
+    
+    def set_new_neighbor_dur(self, name, weight):
+        self.neighbors_duration[name] = weight
 
 
 class Edge:
@@ -32,8 +37,10 @@ class Edge:
         self.from_node = from_node
         self.to_node = to_node
         self.geometry = None
-        self.weight = 0
+        self.distance = 0
+        self.duration = 0
         self.edge_name = self.set_edge_name(from_node, to_node)
+        self.usage_weight = 0
     
     def compute_geometry(self):
         from_n = osrm.Point(latitude=self.from_node.lat,
@@ -41,6 +48,9 @@ class Edge:
         to_n = osrm.Point(latitude=self.to_node.lat,
                           longitude=self.to_node.lon)
         result = osrm.simple_route(from_n, to_n) #, output='route', overview="full", geometry='wkt')
+        # also assign duration and distance
+        self.distance = result['routes'][0]['distance']
+        self.duration = result['routes'][0]['duration']
         # https://github.com/ustroetz/python-osrm
         self.geometry = result['routes'][0]['geometry']
     
@@ -71,3 +81,6 @@ class Edge:
         elif to_node_name not in self.edge_name:
             return False
         return True
+    
+    def add_to_usage_weight(self, weight):
+        self.usage_weight += weight

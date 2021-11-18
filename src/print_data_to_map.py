@@ -13,6 +13,7 @@ import plotly.graph_objects as go
 import numpy as np
 import network_operations as net_ops
 from from_to_pair import FromToPair
+import graphs.graph_ops as gops
 import pdb
 
 
@@ -59,7 +60,7 @@ def load_matrix(selected_matrix, delim='\t', pre_path='data/geodata_names/'):
     sample_df = sample_df.fillna(0)
     print("full loaded matrix path is ", matrix_filepath)
     return sample_df
-
+ 
 
 def _create_pairs_from_df(df):
     # strip df of excess information. hold on to just name and coords
@@ -108,7 +109,7 @@ def plot_routes_to_map(pairs):
             lon_lines_list = []
             lat_nodes_list = []
             lon_nodes_list = []
-            if skat> 70:
+            if skat> 200:
                 break
     #paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
     #                     lat_lines_list, lon_lines_list, colorscales)
@@ -169,7 +170,7 @@ def paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
                         mapbox = {
                             'center': {'lat': lat_center, 
                             'lon': long_center},
-                            'zoom': 13})
+                            'zoom': 8})
 
 
 def scenario_print_traffic(traffic_fname):
@@ -187,12 +188,38 @@ def simple_scenario(traffic_fname):
     pickle.dump(mp_pairs, open_file)
     open_file.close()
     print("file as been created")
+    pdb.set_trace()
+
+
+def print_flows(products_file, centroids_list_file):
+    """Method to print in a map the total flows in the network.
+
+    Args:
+        products_file (str): csv file that contains all flows towards all.
+        centroids_list_file (str): csv file that contains all centroids.
+    """
+    nodes_list, edges_list, nx_graph = _get_network_as_graph(centroids_list_file)
+    pdb.set_trace()
+    _get_flows_between_nodes(products_file)
+
+
+def _get_network_as_graph(centroids_list_file):
+    centroids_csv = centroids_list_file #'/home/blaxeep/workspace/od-dash/data/geodata_names/centroids-list.csv'
+    centroids_df = pd.read_csv(centroids_csv, sep='\t')
+    nodes_list, edges_list, net_graph = gops.read_adjacency_list_from_file(centroids_df)
+    return nodes_list, edges_list, net_graph
+
+
+def _get_flows_between_nodes(products_file):
+    pass
 
 
 def main():
-    #simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
-    fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
+    simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
+    #fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
     pdb.set_trace()
+    products_f = '/home/blaxeep/workspace/od-dash/results/mydf.csv'
+    centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/centroids-list.csv'
 
 
 if __name__ == '__main__':

@@ -2,9 +2,10 @@
 Module to implement graph operations as well as read/write operations.
 """
 
+import osrm
+import networkx as nx
 import pandas as pd
-
-import network_graph as net_graph
+import graphs.network_graph as net_graph
 import pdb
 
 
@@ -29,7 +30,8 @@ def read_adjacency_list_from_file(df):
         cleaned = [neighbor for neighbor in neighbors if str(neighbor) != 'nan']
         cleaned_neighbors_list.append(cleaned)
     # create adjacency list
-    create_graph(centroids_df, cleaned_neighbors_list)
+    nodes_list, edges_list, net_graph = create_graph(centroids_df, cleaned_neighbors_list)
+    return nodes_list, edges_list, net_graph
 
 
 def create_graph(centroids_df, neighbors_list):
@@ -42,14 +44,20 @@ def create_graph(centroids_df, neighbors_list):
         neighbors_list ([type]): [description]
     """
     # create a list of tuples containing <name, lon, lat>
-    new_df = centroids_df.drop(['ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ', 'ΠΕΡΙΦΕΡΕΙΑ'], axis=1)
+    new_df = centroids_df.drop(['ΚΕΝΤΡΟΕΙΔΕΣ', 'ΠΕΡΙΦΕΡΕΙΑ'], axis=1)
     tuples = list(new_df.itertuples(index=False, name=None))
-    # iterate tuples and create a list with all vs all
+    # create all nodes and add them to a list
     nodes_list = []
     populate_nodes_list(nodes_list, tuples)
-    pdb.set_trace()
     edges_list = []
-    populate_edges_list(edges_list, nodes_list, neighbors_list) #TODO here
+    # create neighbors to the nodes
+    assign_neighbors_to_nodes(nodes_list, neighbors_list, tuples)
+    # create edges list
+    populate_edges_list(edges_list, nodes_list, neighbors_list, tuples)
+    # have them all inside networkx
+    net_graph = add_networkx_graph(nodes_list, edges_list)
+    return (nodes_list, edges_list, net_graph)
+    
 
 
 def  populate_nodes_list(nodes_list, tuples):
@@ -57,15 +65,87 @@ def  populate_nodes_list(nodes_list, tuples):
         name, lon, lat = t
         vertex = net_graph.Vertex(name=name, lat=lat, lon=lon)
         nodes_list.append(vertex)
+
+
+def assign_neighbors_to_nodes(nodes_list, neighbors_list, tuples):
+    """Method to assign neighbors to nodes.
     
+    Nodes list has all node instances of the network.
+    Neighbors list is a list with the names of the neighbors.
+    Element of the first list points to the corresponding element of the second
+    list, etc.
+
+    Args:
+        nodes_list ([type]): [description]
+        neighbors_list ([type]): [description]
+    """
+    # iterate both lists
+    for node, neighbors in zip(nodes_list, neighbors_list):
+        # for each node, search the node to the first list
+        for neighbor in neighbors:
+            # make a minimum path between the two and
+            # save it to the node's list.
+            neighbor_name_coords = [item for item in tuples if item[0] == neighbor][0]
+            assign_distance_between_neighbors(node, neighbor_name_coords)
+
+
+def assign_distance_between_neighbors(node, neighbor_name_coords):
+    # get node coords
+    node_point = osrm.Point(latitude=node.lat, longitude=node.lon)
+    # get neighbor coords
+    neighbor_name, neighbor_lon, neighbor_lat = neighbor_name_coords
+    neighbor_point = osrm.Point(latitude=neighbor_lat, longitude=neighbor_lon)
+    # find distance between the two
+    full_route = osrm.simple_route(node_point, neighbor_point)
+    dist = full_route['routes'][0]['distance']
+    # populate node with the neighbor and the distance between the two.
+    node.set_new_neighbor_dist(neighbor_name, dist)
+    # populate node with the neighbor and the duration between the two.
+    dur = full_route['routes'][0]['duration']
+    node.set_new_neighbor_dur(neighbor_name, dur)
+
+
+def populate_edges_list(edges_list, nodes_list, neighbors_list, tuples):
+    # for each node create an edge with its neighbor.
+    for node, neighbors in zip(nodes_list, neighbors_list):
+        # for each node, search the node to the first list
+        for neighbor in neighbors:
+            neighbor_name_coords = [item for item in tuples if item[0] == neighbor][0]
+            # populate edge with from-to nodes, name of the edge and geometry
+            from_node = node
+            neighbor_name = neighbor_name_coords[0]
+            to_node = [a_node for a_node in nodes_list if a_node.name==neighbor_name][0]
+            # check if edge exists backwards (from-to is to-from) and if not, continue
+            if _edge_exists(edges_list, from_node, to_node):
+                print("edge exists between", str(from_node.name), " and ", str(to_node.name))
+                continue
+            edge = net_graph.Edge(from_node, to_node)
+            # save geometry to edge.
+            edge.compute_geometry()
+            edge.set_edge_name(from_node, to_node)
+            edges_list.append(edge)
+
+
+def  _edge_exists(edges_list, from_node, to_node):
+    for edge in edges_list:
+        if edge.are_nodes_in_edge(from_node.name, to_node.name):
+            return True
+    return False
+    
+def add_networkx_graph(nodes_list, edges_list):
+    G = nx.Graph()
+    for node in nodes_list:
+        G.add_node(node.name)
+    for edge in edges_list:
+        G.add_edge(edge.from_node.name, edge.to_node.name, weight=edge.distance)
+    return G
 
 
 def main():
     # read the csv file as dataframe
-    centroids_csv = '/home/blaxeep/workspace/od-dash/data/geodata_names/centroids-list.csv'
+    centroids_csv = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
     centroids_df = pd.read_csv(centroids_csv, sep='\t')
-    read_adjacency_list_from_file(centroids_df)
-    pdb.set_trace()
+    nodes_list, edges_list, net_graph = read_adjacency_list_from_file(centroids_df)
     # convert dataframe contents to nodes and edges
     #return the result
 
