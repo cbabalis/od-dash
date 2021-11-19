@@ -110,7 +110,7 @@ def plot_routes_to_map(pairs):
             lon_lines_list = []
             lat_nodes_list = []
             lon_nodes_list = []
-            if skat> 200:
+            if skat> 100:
                 break
     #paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
     #                     lat_lines_list, lon_lines_list, colorscales)
@@ -120,7 +120,6 @@ def plot_routes_to_map(pairs):
 def set_geometry_between_two_points(pair, lat_list, lon_list, skat):
     try:
         route_lines = polyline.decode(pair.geometry)
-        print("length of route lines is ", len(route_lines))
     except:
         print("error in pair ", skat)
         return False
@@ -143,17 +142,18 @@ def set_coords_of_two_points(pair, lat_list, lon_list, has_geometry_set):
 
 
 def paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
-                         lat_lines_list, lon_lines_list, color):
+                         lat_lines_list, lon_lines_list, color, weight=4.5,
+                         node_title="Κέντρα Περιφερειακών Ενοτήτων", edge_title="Ροές Φορτίων"):
         fig.add_trace(go.Scattermapbox(
-            name = "Ροές Φορτίων",
+            name = edge_title,
             mode = "lines",
             lon = lon_lines_list,
             lat = lat_lines_list,
             marker = {'size': 10},
-            line = dict(width = 4.5, color = color)))
+            line = dict(width = weight, color = color)))
         # adding source marker
         fig.add_trace(go.Scattermapbox(
-            name = "Κέντρα Περιφερειακών Ενοτήτων",
+            name = node_title,
             mode = "markers",
             lon = lon_nodes_list,
             lat = lat_nodes_list,
@@ -199,6 +199,22 @@ def print_flows(products_file, centroids_list_file):
     """
     nodes_list, edges_list, nx_graph = _get_network_as_graph(centroids_list_file)
     _get_flows_between_nodes(products_file, edges_list, nx_graph)
+    # prepare each edge geometry and coordinates for printing
+    colorscales = css_cols
+    old_range, min_val = _compute_old_range(edges_list)
+    fig = go.Figure()
+    pdb.set_trace()
+    for edge in edges_list:
+        lat_nodes_list = [edge.from_node.lat, edge.to_node.lat]
+        lon_nodes_list = [edge.from_node.lon, edge.to_node.lon]
+        lat_lines_list, lon_lines_list = edge.get_geometry_lats_lons_lists()
+        scaled_weight = _get_scaled_weight(edge, old_range, min_val)
+        scaled_color = _set_scaled_color(scaled_weight)
+        route_title_name, route_name_weight = _get_route_details(edge)
+        paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
+                        lat_lines_list, lon_lines_list, scaled_color, scaled_weight,
+                        route_title_name, route_name_weight)
+    return fig
 
 
 def _get_network_as_graph(centroids_list_file):
@@ -218,7 +234,6 @@ def _get_flows_between_nodes(products_file, edges_list, net_graph):
     for unit in regional_units:
         values = pdf[unit].tolist()
         _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, net_graph)
-    pdb.set_trace()
 
 
 def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, net_graph):
@@ -250,12 +265,63 @@ def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values,
 
 
 
+def _compute_old_range(edges_list):
+    min_val = 1000000
+    max_val = 0
+    # find minimum and maximum weights from total edges
+    for edge in edges_list:
+        if min_val > edge.usage_weight:
+            min_val = edge.usage_weight
+        if max_val < edge.usage_weight:
+            max_val = edge.usage_weight
+    # compute old_range and return it
+    old_range = max_val - min_val
+    print("max range is ", max_val, " and min val is ", min_val)
+    return old_range, min_val
+
+
+def _get_scaled_weight(edge, old_range, min_val, new_range=15):
+    """scaling takes place according to this:
+    NewValue = (((OldValue - OldMin) * NewRange) / OldRange) + NewMin
+    
+    https://stackoverflow.com/questions/929103/convert-a-number-range-to-another-range-maintaining-ratio
+
+    Args:
+        edge ([type]): [description]
+        old_range ([type]): [description]
+        min_range ([type]): [description]
+    """
+    new_min = 3
+    old_weight = edge.usage_weight
+    weight = ((old_weight - min_val) * new_range) / old_range +new_min
+    return weight
+
+
+def _set_scaled_color(weight, max_threshold=15):
+    if weight < max_threshold/4:
+        return 'rgb(0, 255, 0)'
+    elif weight < max_threshold/3:
+        return 'rgb(255, 255, 0)'
+    elif weight < max_threshold/3:
+        return 'rgb(255, 165, 0)'
+    else:
+        return 'rgb(255, 0, 0)'
+
+
+def _get_route_details(edge):
+    """ method to get route name and weight."""
+    route_name = edge.edge_name
+    route_flow = "Κίνηση: " + str(edge.usage_weight)
+    return route_name, route_flow
+
+
+
 def main():
     #simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
-    #fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
+    fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
     products_f = '/home/blaxeep/workspace/od-dash/results/mydf.csv'
     centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
-    print_flows(products_f, centroids_f)
+    fig = print_flows(products_f, centroids_f)
     pdb.set_trace()
 
 

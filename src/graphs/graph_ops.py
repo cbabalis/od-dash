@@ -117,7 +117,7 @@ def populate_edges_list(edges_list, nodes_list, neighbors_list, tuples):
             to_node = [a_node for a_node in nodes_list if a_node.name==neighbor_name][0]
             # check if edge exists backwards (from-to is to-from) and if not, continue
             if _edge_exists(edges_list, from_node, to_node):
-                print("edge exists between", str(from_node.name), " and ", str(to_node.name))
+                #print("edge exists between", str(from_node.name), " and ", str(to_node.name))
                 continue
             edge = net_graph.Edge(from_node, to_node)
             # save geometry to edge.

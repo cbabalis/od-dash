@@ -2,6 +2,7 @@
 """
 
 import osrm
+import polyline
 
 
 class Vertex:
@@ -55,7 +56,9 @@ class Edge:
         self.geometry = result['routes'][0]['geometry']
     
     def get_geometry(self):
+        self.compute_geometry()
         if not self.geometry:
+            print("No geometry exists!")
             return -1
         else:
             return self.geometry
@@ -67,7 +70,7 @@ class Edge:
             from_node (Node): [description]
             to_node (Node): [description]
         """
-        self.edge_name = str(from_node.name) + str(to_node.name)
+        self.edge_name = str(from_node.name) + str("-") + str(to_node.name)
     
     def are_nodes_in_edge(self, from_node_name, to_node_name):
         """Method to check if from and to nodes are in this edge
@@ -84,3 +87,20 @@ class Edge:
     
     def add_to_usage_weight(self, weight):
         self.usage_weight += weight
+    
+    
+    def get_geometry_lats_lons_lists(self):
+        self.edge_lat_list = []
+        self.edge_lon_list = []
+        self.compute_geometry()
+        try:
+            route_lines = polyline.decode(self.geometry)
+            #print("length of route lines points is ", len(route_lines))
+        except:
+            print("error in geometry of edge ", self.edge_name)
+            return False
+        for line in route_lines:
+            lat, lon = line
+            self.edge_lat_list.append(lat)
+            self.edge_lon_list.append(lon)
+        return (self.edge_lat_list, self.edge_lon_list)
