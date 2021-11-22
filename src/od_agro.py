@@ -19,6 +19,7 @@ from os.path import isfile, join
 import os
 cwd = os.getcwd()
 import four_step_model_updated as fs_model
+import print_data_to_map
 from dash_extensions import Download
 from dash_extensions.snippets import send_data_frame
 import pdb
@@ -294,6 +295,12 @@ app.layout = html.Div([
               'width': '1020px',
               'margin':'auto'}),
     html.Div(id='button-clicked-msg'),
+    # map figure
+    html.Hr(),
+    html.Div(children=[
+        dcc.Graph(id='flows_fig'),
+    ], style = {'display': 'inline-block', 'height': '178%', 'width': '95%'}),
+    # end of map figure
 ])
 
 
@@ -541,7 +548,7 @@ def displayClick(btn1, btn2):
 )
 def func(n_clicks, prod_cons_matrix, region_lvl):
     temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
-    return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
+    return send_data_frame(download_df.to_csv, results_filepath)#"mydf.csv") # dash_extensions.snippets: send_data_frame
     # temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
     # resistance_title_cols = temp_dff[region_lvl].unique()
     # resistance_title_cols = resistance_title_cols.tolist()
@@ -552,6 +559,15 @@ def func(n_clicks, prod_cons_matrix, region_lvl):
     # download_df.insert(0, 'Unnamed: 0', resistance_title_cols)
     # return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
 
+
+@app.callback(
+    Output('flows_fig', 'figure'),
+    [Input('networkx-button', 'n_clicks')],)
+def print_flows(n_clicks,):
+    products_f = 'results/output-1.csv' #mydf.csv'
+    centroids_f = 'data/geodata_names/perif_centroids.csv'
+    fig = print_data_to_map.print_flows(products_f, centroids_f)
+    return fig
 
 
 if __name__ == "__main__":

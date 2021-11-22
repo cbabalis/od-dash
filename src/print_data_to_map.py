@@ -133,7 +133,7 @@ def set_geometry_between_two_points(pair, lat_list, lon_list, skat):
 def set_coords_of_two_points(pair, lat_list, lon_list, has_geometry_set):
     if not has_geometry_set:
         return False
-    print("from node is ", pair.from_node.name, " while to node is ", pair.to_node.name)
+    #print("from node is ", pair.from_node.name, " while to node is ", pair.to_node.name)
     lat_list.append(pair.from_node.lat)
     lon_list.append(pair.from_node.lon)
     lat_list.append(pair.to_node.lat)
@@ -202,8 +202,9 @@ def print_flows(products_file, centroids_list_file):
     # prepare each edge geometry and coordinates for printing
     colorscales = css_cols
     old_range, min_val = _compute_old_range(edges_list)
+    # sort edges list by usage weight (in order for the heavier edges to be last)
+    edges_list.sort(key=lambda x: x.usage_weight, reverse=False)
     fig = go.Figure()
-    pdb.set_trace()
     for edge in edges_list:
         lat_nodes_list = [edge.from_node.lat, edge.to_node.lat]
         lon_nodes_list = [edge.from_node.lon, edge.to_node.lon]
@@ -291,6 +292,9 @@ def _get_scaled_weight(edge, old_range, min_val, new_range=15):
         old_range ([type]): [description]
         min_range ([type]): [description]
     """
+    if old_range == 0:
+        print("no range, it is 0. cannot be.")
+        return -1
     new_min = 3
     old_weight = edge.usage_weight
     weight = ((old_weight - min_val) * new_range) / old_range +new_min
@@ -319,7 +323,7 @@ def _get_route_details(edge):
 def main():
     #simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
     fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
-    products_f = '/home/blaxeep/workspace/od-dash/results/mydf.csv'
+    products_f = '/home/blaxeep/workspace/od-dash/results/output-1.csv' #mydf.csv'
     centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
     fig = print_flows(products_f, centroids_f)
     pdb.set_trace()
