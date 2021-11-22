@@ -20,6 +20,7 @@ import os
 cwd = os.getcwd()
 import four_step_model_updated as fs_model
 import print_data_to_map
+import graphs.graph_ops as gops
 from dash_extensions import Download
 from dash_extensions.snippets import send_data_frame
 import pdb
@@ -28,6 +29,8 @@ import pdb
 my_path = 'data/'
 onlyfiles = [f for f in listdir(my_path) if isfile(join(my_path, f))]
 download_df = [] # file for downloading
+edges_list = [] # list of edges. global.
+nodes_list = [] # list of nodes. global
 
 prod_cons_path = 'data/prod_cons/'
 #prod_cons_files = uploaded_files(prod_cons_path) # [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))]
@@ -109,7 +112,34 @@ def _get_od_column_names(resistance_title_names, nuts_names, df):
     else:
         ids_list = [id for id in range(len(resistance_title_names))]
         return [{'name':val, 'id':key} for key, val in zip(ids_list, resistance_title_names)]
-    
+
+
+def create_edges_df(edges_list):
+    # create two lists containing all edges' names and weights, respectively
+    edges_names = []
+    edges_vals = []
+    for edge in edges_list:
+        edges_names.append(edge.edge_name)
+        edges_vals.append(edge.usage_weight)
+    # create a dictionary with the data
+    edges_dict = {'Διαδρομή':edges_names, 'Συνολική Κίνηση':edges_vals}
+    # create a dataframe from dictionary and return it
+    dff = pd.DataFrame(edges_dict)
+    return dff
+
+
+def create_nodes_df(nodes_list, edges_list):
+    # create two lists containing the names of the nodes and the values respectively
+    nodes_names = []
+    nodes_vals = []
+    for node in nodes_list:
+        node_name = node.name
+        node_weight = gops.get_total_weight_passing_from_node(node_name, edges_list)
+        nodes_names.append(node_name)
+        nodes_vals.append(node_weight)
+    nodes_dict = {'Περιφερειακή Ενότητα':nodes_names, 'Συνολικό Διακινηθέν Φορτίο':nodes_vals}
+    dff = pd.DataFrame(nodes_dict)
+    return dff
 
 
 def discrete_background_color_bins(df, n_bins=9, columns='all'):
@@ -262,7 +292,7 @@ app.layout = html.Div([
                 value=35,
                 step=1,
                 marks={
-                    10: {'label': '0%', 'style': {'color': '#77b0b1'}},
+                    0: {'label': '0%', 'style': {'color': '#77b0b1'}},
                     35: {'label': '35%'},
                     50: {'label': '50%'},
                     75: {'label': '75%', 'style': {'color': '#f50'}}
@@ -301,6 +331,20 @@ app.layout = html.Div([
         dcc.Graph(id='flows_fig'),
     ], style = {'display': 'inline-block', 'height': '178%', 'width': '95%'}),
     # end of map figure
+    # start of edges and nodes table
+    html.Div([
+        html.Div([
+        html.Button('Διάθεση επιμέρους Στοιχείων Ροών', id='flows_button',n_clicks=0),
+        ], style={'margin-bottom': '10px',
+                'textAlign':'center',
+                'width': '220px',
+                'margin':'auto'}),
+        html.Label("Μετακινούμενες Ποσότητες μεταξύ Περιφερειακών Ενοτήτων"),
+        html.Div(id='edges-table',  className='tableDiv'),
+        html.Label("Μετακινούμενες Ποσότητες ανά Περιφερειακή Ενότητα"),
+        html.Div(id='nodes-table',  className='tableDiv'),
+    ])
+    # end of edges and nodes table
 ])
 
 
@@ -562,12 +606,103 @@ def func(n_clicks, prod_cons_matrix, region_lvl):
 
 @app.callback(
     Output('flows_fig', 'figure'),
-    [Input('networkx-button', 'n_clicks')],)
+    [Input('networkx-button', 'n_clicks'),])
 def print_flows(n_clicks,):
-    products_f = 'results/output-1.csv' #mydf.csv'
-    centroids_f = 'data/geodata_names/perif_centroids.csv'
-    fig = print_data_to_map.print_flows(products_f, centroids_f)
-    return fig
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'networkx-button' in changed_id:
+        products_f = 'results/output-1.csv' #mydf.csv'
+        centroids_f = 'data/geodata_names/perif_centroids.csv'
+        global edges_list
+        global nodes_list
+        fig, edges_list, nodes_list = print_data_to_map.print_flows(products_f, centroids_f)
+        return fig
+    else:
+        return -1
+
+
+@app.callback(
+    Output('edges-table', 'children'),
+    [Input('flows_button', 'n_clicks')],
+    )
+def update_edges_output(click_value):
+    """method regarding edges array
+
+    Args:
+        click_value ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    if not click_value:
+        return dash.no_update
+    global edges_list
+    edges_dff = create_edges_df(edges_list)
+    df_temp = edges_dff
+    (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
+    # create results columns' names
+    results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
+    return html.Div([
+        html.Div(legend, style={'float': 'right'}),
+        dash_table.DataTable(
+            data=df_temp.to_dict('records'),
+            sort_action='native',
+            columns= results_cols,
+            page_action="native",
+            page_current= 0,
+            page_size= 15,
+            style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            editable=True,
+            filter_action='native',
+            row_selectable="multi",
+            style_data_conditional=styles
+        ),
+    ])
+
+
+
+@app.callback(
+    Output('nodes-table', 'children'),
+    [Input('flows_button', 'n_clicks')],
+    )
+def update_edges_output(click_value):
+    if not click_value:
+        return dash.no_update
+    global nodes_list
+    global edges_list
+    nodes_dff = create_nodes_df(nodes_list, edges_list)
+    df_temp = nodes_dff
+    (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
+    # create results columns' names
+    results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
+    return html.Div([
+        html.Div(legend, style={'float': 'right'}),
+        dash_table.DataTable(
+            data=df_temp.to_dict('records'),
+            sort_action='native',
+            columns= results_cols,
+            page_action="native",
+            page_current= 0,
+            page_size= 15,
+            style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            editable=True,
+            filter_action='native',
+            row_selectable="multi",
+            style_data_conditional=styles
+        ),
+    ])
+
 
 
 if __name__ == "__main__":

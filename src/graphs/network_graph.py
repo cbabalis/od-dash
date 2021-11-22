@@ -12,6 +12,7 @@ class Vertex:
         self.lon = lon
         self.neighbors_distance = {}
         self.neighbors_duration = {}
+        self.total_weight = 0
     
     def set_lat(self, lat):
         self.lat = lat
@@ -104,3 +105,8 @@ class Edge:
             self.edge_lat_list.append(lat)
             self.edge_lon_list.append(lon)
         return (self.edge_lat_list, self.edge_lon_list)
+    
+    def is_node_in_edge(self, node_name):
+        if node_name in self.edge_name:
+            return True
+        return False

@@ -140,6 +140,13 @@ def add_networkx_graph(nodes_list, edges_list):
         G.add_edge(edge.from_node.name, edge.to_node.name, weight=edge.distance)
     return G
 
+def get_total_weight_passing_from_node(node_name, edges_list):
+    total_weight = 0
+    for edge in edges_list:
+        if edge.is_node_in_edge(node_name):
+            total_weight += edge.usage_weight
+    return total_weight
+
 
 def main():
     # read the csv file as dataframe

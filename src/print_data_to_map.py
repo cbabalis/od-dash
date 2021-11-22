@@ -215,7 +215,7 @@ def print_flows(products_file, centroids_list_file):
         paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
                         lat_lines_list, lon_lines_list, scaled_color, scaled_weight,
                         route_title_name, route_name_weight)
-    return fig
+    return fig, edges_list, nodes_list
 
 
 def _get_network_as_graph(centroids_list_file):
@@ -325,7 +325,7 @@ def main():
     fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
     products_f = '/home/blaxeep/workspace/od-dash/results/output-1.csv' #mydf.csv'
     centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
-    fig = print_flows(products_f, centroids_f)
+    fig, edges_list, nodes_list = print_flows(products_f, centroids_f)
     pdb.set_trace()
 
 
