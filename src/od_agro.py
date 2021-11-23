@@ -125,7 +125,7 @@ def create_edges_df(edges_list):
     edges_dict = {'Διαδρομή':edges_names, 'Συνολική Κίνηση':edges_vals}
     # create a dataframe from dictionary and return it
     dff = pd.DataFrame(edges_dict)
-    return dff
+    return dff.round(2)
 
 
 def create_nodes_df(nodes_list, edges_list):
@@ -137,9 +137,10 @@ def create_nodes_df(nodes_list, edges_list):
         node_weight = gops.get_total_weight_passing_from_node(node_name, edges_list)
         nodes_names.append(node_name)
         nodes_vals.append(node_weight)
-    nodes_dict = {'Περιφερειακή Ενότητα':nodes_names, 'Συνολικό Διακινηθέν Φορτίο':nodes_vals}
+    nodes_dict = {'Περιφερειακή Ενότητα':nodes_names, 'Συνολικό Διακινηθέν Φορτίο (σε κιλά)':nodes_vals}
     dff = pd.DataFrame(nodes_dict)
-    return dff
+    dff = dff.sort_values(by=['Συνολικό Διακινηθέν Φορτίο (σε κιλά)'], ascending=False)
+    return dff.round(2)
 
 
 def convert_od_to_two_cols_table(df):
@@ -161,10 +162,8 @@ def convert_od_to_two_cols_table(df):
             weights_list.append(weight)
     orig_dest_dict = {'Όνομα Διαδρομής':names_list, 'Μεταφερόμενη Ποσότητα (σε κιλά)':weights_list}
     dff = pd.DataFrame(orig_dest_dict)
-    return dff
-            
-        
-    # return the new dataframe from the dictionary
+    dff = dff.sort_values(by=['Μεταφερόμενη Ποσότητα (σε κιλά)'], ascending=False)
+    return dff.round(2)
 
 
 def discrete_background_color_bins(df, n_bins=9, columns='all'):
@@ -343,8 +342,8 @@ app.layout = html.Div([
         ],
     ),
     html.Div([
-        html.Button('Κατανομή στο Δίκτυο (networkX)', id='networkx-button', n_clicks=0),
-        html.Button('Κατανομή στο Δίκτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
+        html.Button('Κατανομη στο Δικτυο (networkX)', id='networkx-button', n_clicks=0),
+        html.Button('Κατανομη στο Δικτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
     ], className='row', style={'margin-bottom': '10px',
               'textAlign':'center',
               'width': '1020px',
@@ -359,14 +358,25 @@ app.layout = html.Div([
     # start of edges and nodes table
     html.Div([
         html.Div([
-        html.Button('Διάθεση επιμέρους Στοιχείων Ροών', id='flows_button',n_clicks=0),
+        html.Button('Διαθεση επιμερους Στοιχειων Ροων', id='flows_button',n_clicks=0),
         ], style={'margin-bottom': '10px',
                 'textAlign':'center',
                 'width': '220px',
                 'margin':'auto'}),
-        html.Label("Μετακινούμενες Ποσότητες μεταξύ Περιφερειακών Ενοτήτων"),
+        html.Label("Μετακινούμενες Ποσότητες μεταξύ Περιφερειακών Ενοτήτων",
+                   style={'font-weight': 'bold',
+                            'fontSize' : '17px',
+                            'margin-left':'auto',
+                            'margin-right':'auto',
+                            'display':'block'}),
         html.Div(id='edges-table',  className='tableDiv'),
-        html.Label("Μετακινούμενες Ποσότητες ανά Περιφερειακή Ενότητα"),
+        html.Hr(),
+        html.Label("Μετακινούμενες Ποσότητες ανά Περιφερειακή Ενότητα",
+                   style={'font-weight': 'bold',
+                            'fontSize' : '17px',
+                            'margin-left':'auto',
+                            'margin-right':'auto',
+                            'display':'block'}),
         html.Div(id='nodes-table',  className='tableDiv'),
     ])
     # end of edges and nodes table
@@ -722,7 +732,10 @@ def update_edges_output(click_value):
             editable=True,
             filter_action='native',
             row_selectable="multi",
-            style_data_conditional=styles
+            style_data_conditional=styles,
+            export_format='xlsx',
+            export_headers='display',
+            merge_duplicate_headers=True
         ),
     ])
 

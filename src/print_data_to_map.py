@@ -198,7 +198,9 @@ def print_flows(products_file, centroids_list_file):
         centroids_list_file (str): csv file that contains all centroids.
     """
     nodes_list, edges_list, nx_graph = _get_network_as_graph(centroids_list_file)
+    print("Nodes and edges lists created. Graph has been obtained.")
     _get_flows_between_nodes(products_file, edges_list, nx_graph)
+    print("Nodes have been populated with flows.")
     # prepare each edge geometry and coordinates for printing
     colorscales = css_cols
     old_range, min_val = _compute_old_range(edges_list)
