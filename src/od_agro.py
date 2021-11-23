@@ -142,6 +142,31 @@ def create_nodes_df(nodes_list, edges_list):
     return dff
 
 
+def convert_od_to_two_cols_table(df):
+    names_list = []
+    weights_list = []
+    # drop all unnecessary info from dataframe
+    pdf = df
+    # drop first two columns as they contain redundant data.
+    pdf = pdf.iloc[:,1:]
+    # get all columns to a list (regional units)
+    regional_units = pdf.columns.tolist()
+    # iterate over all regional units adding the weight.
+    for orig in regional_units:
+        values = pdf[orig].tolist()
+        # create all pairs and add them to a dictionary with a value (weight)
+        for dest, weight in zip(regional_units, values):
+            name = str(orig) + '-' + str(dest)
+            names_list.append(name)
+            weights_list.append(weight)
+    orig_dest_dict = {'Όνομα Διαδρομής':names_list, 'Μεταφερόμενη Ποσότητα (σε κιλά)':weights_list}
+    dff = pd.DataFrame(orig_dest_dict)
+    return dff
+            
+        
+    # return the new dataframe from the dictionary
+
+
 def discrete_background_color_bins(df, n_bins=9, columns='all'):
     import colorlover
     bounds = [i * (1.0 / n_bins) for i in range(n_bins + 1)]
@@ -429,7 +454,6 @@ def set_products_options(selected_country):
     return [{'label': i, 'value': i} for i in resistance_files]
 
 
-
 @app.callback(
     Output('resistance-input-table', 'children'),
     [Input('availability-radio-resistance', 'value'),
@@ -488,7 +512,6 @@ def set_display_table(selected_resistance_matrix):
     tooltip_duration=None
         )
     ])
-
 
 
 @app.callback(Output('output-provider', 'children'),
@@ -635,8 +658,8 @@ def update_edges_output(click_value):
     """
     if not click_value:
         return dash.no_update
-    global edges_list
-    edges_dff = create_edges_df(edges_list)
+    global download_df
+    edges_dff = convert_od_to_two_cols_table(download_df) #create_edges_df(edges_list)
     df_temp = edges_dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
