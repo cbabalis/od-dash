@@ -190,17 +190,14 @@ def simple_scenario(traffic_fname):
     print("file has been created")
 
 
-def print_flows(products_file, centroids_list_file):
+def print_flows(products_file, nodes_list, edges_list, nx_graph):
     """Method to print in a map the total flows in the network.
 
     Args:
         products_file (str): csv file that contains all flows towards all.
         centroids_list_file (str): csv file that contains all centroids.
     """
-    nodes_list, edges_list, nx_graph = _get_network_as_graph(centroids_list_file)
-    print("Nodes and edges lists created. Graph has been obtained.")
     _get_flows_between_nodes(products_file, edges_list, nx_graph)
-    print("Nodes have been populated with flows.")
     # prepare each edge geometry and coordinates for printing
     colorscales = css_cols
     old_range, min_val = _compute_old_range(edges_list)
@@ -220,7 +217,7 @@ def print_flows(products_file, centroids_list_file):
     return fig, edges_list, nodes_list
 
 
-def _get_network_as_graph(centroids_list_file):
+def get_network_as_graph(centroids_list_file):
     centroids_csv = centroids_list_file #'/home/blaxeep/workspace/od-dash/data/geodata_names/centroids-list.csv'
     centroids_df = pd.read_csv(centroids_csv, sep='\t')
     nodes_list, edges_list, net_graph = gops.read_adjacency_list_from_file(centroids_df)
@@ -327,7 +324,8 @@ def main():
     fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
     products_f = '/home/blaxeep/workspace/od-dash/results/output-1.csv' #mydf.csv'
     centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
-    fig, edges_list, nodes_list = print_flows(products_f, centroids_f)
+    nodes_list, edges_list, nx_graph = get_network_as_graph(centroids_f)
+    fig, edges_list, nodes_list = print_flows(products_f, nodes_list, edges_list, nx_graph)
     pdb.set_trace()
 
 

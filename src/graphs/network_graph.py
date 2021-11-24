@@ -96,7 +96,6 @@ class Edge:
         self.compute_geometry()
         try:
             route_lines = polyline.decode(self.geometry)
-            #print("length of route lines points is ", len(route_lines))
         except:
             print("error in geometry of edge ", self.edge_name)
             return False

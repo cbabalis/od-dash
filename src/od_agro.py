@@ -220,6 +220,9 @@ def discrete_background_color_bins(df, n_bins=9, columns='all'):
     return (styles, html.Div(legend, style={'padding': '5px 0 5px 0'}))
 
 
+# initialize network construction
+centroids_f = 'data/geodata_names/perif_centroids.csv'
+nodes_list, edges_list, nx_graph = print_data_to_map.get_network_as_graph(centroids_f)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -644,10 +647,10 @@ def print_flows(n_clicks,):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'networkx-button' in changed_id:
         products_f = 'results/output-1.csv' #mydf.csv'
-        centroids_f = 'data/geodata_names/perif_centroids.csv'
         global edges_list
         global nodes_list
-        fig, edges_list, nodes_list = print_data_to_map.print_flows(products_f, centroids_f)
+        global nx_graph
+        fig, edges_list, nodes_list = print_data_to_map.print_flows(products_f, nodes_list, edges_list, nx_graph)
         return fig
     else:
         return -1
