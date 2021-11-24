@@ -166,6 +166,31 @@ def convert_od_to_two_cols_table(df):
     return dff.round(2)
 
 
+def create_this_table(legend, df_temp, results_cols, styles):
+    return html.Div([
+        html.Div(legend, style={'float': 'right'}),
+        dash_table.DataTable(
+            data=df_temp.to_dict('records'),
+            sort_action='native',
+            columns= results_cols,
+            page_action="native",
+            page_current= 0,
+            page_size= 15,
+            style_table={
+                'maxHeight': '50%',
+                'overflowY': 'scroll',
+                'width': '100%',
+                'minWidth': '10%',
+            },
+            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
+            editable=True,
+            filter_action='native',
+            row_selectable="multi",
+            style_data_conditional=styles
+        ),
+    ])
+
+
 def discrete_background_color_bins(df, n_bins=9, columns='all'):
     import colorlover
     bounds = [i * (1.0 / n_bins) for i in range(n_bins + 1)]
@@ -223,6 +248,8 @@ def discrete_background_color_bins(df, n_bins=9, columns='all'):
 # initialize network construction
 centroids_f = 'data/geodata_names/perif_centroids.csv'
 nodes_list, edges_list, nx_graph = print_data_to_map.get_network_as_graph(centroids_f)
+# remove any edges that are not suitable for print
+gops.import_edges_settings(edges_list)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -366,6 +393,14 @@ app.layout = html.Div([
                 'textAlign':'center',
                 'width': '220px',
                 'margin':'auto'}),
+        html.Label("Μετακινούμενες Ποσότητες από Θάλασσα",
+                   style={'font-weight': 'bold',
+                            'fontSize' : '17px',
+                            'margin-left':'auto',
+                            'margin-right':'auto',
+                            'display':'block'}),
+        html.Div(id='hidden-edges-table',  className='tableDiv'),
+        html.Hr(),
         html.Label("Μετακινούμενες Ποσότητες μεταξύ Περιφερειακών Ενοτήτων",
                    style={'font-weight': 'bold',
                             'fontSize' : '17px',
@@ -657,6 +692,39 @@ def print_flows(n_clicks,):
 
 
 @app.callback(
+    Output('hidden-edges-table', 'children'),
+    [Input('flows_button', 'n_clicks')],
+    )
+def update_edges_output(click_value):
+    """method regarding edges array
+
+    Args:
+        click_value ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    if not click_value:
+        return dash.no_update
+    global edges_list
+    # acquire all edges that have not been printed
+    hidden_edges_list = [edge for edge in edges_list if edge.print_enabled==False]
+    hidden_edges_names = []
+    hidden_edges_weights = []
+    for edge in hidden_edges_list:
+        hidden_edges_names.append(edge.edge_name)
+        hidden_edges_weights.append(edge.usage_weight)
+    hidden_edges_dict = {'Μετακίνηση μεταξύ Περιφερειακών Ενοτήτων': hidden_edges_names,
+                         'Μετακινούμενες Ποσότητες από Θαλάσσης': hidden_edges_weights}
+    hidden_df = pd.DataFrame(hidden_edges_dict)
+    df_temp = hidden_df.round(2)
+    (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
+    # create results columns' names
+    results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
+    return create_this_table(legend, df_temp, results_cols, styles)
+
+
+@app.callback(
     Output('edges-table', 'children'),
     [Input('flows_button', 'n_clicks')],
     )
@@ -699,7 +767,6 @@ def update_edges_output(click_value):
             style_data_conditional=styles
         ),
     ])
-
 
 
 @app.callback(

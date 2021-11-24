@@ -57,7 +57,6 @@ def create_graph(centroids_df, neighbors_list):
     # have them all inside networkx
     net_graph = add_networkx_graph(nodes_list, edges_list)
     return (nodes_list, edges_list, net_graph)
-    
 
 
 def  populate_nodes_list(nodes_list, tuples):
@@ -146,6 +145,43 @@ def get_total_weight_passing_from_node(node_name, edges_list):
         if edge.is_node_in_edge(node_name):
             total_weight += edge.usage_weight
     return total_weight
+
+## =================================##
+##      edges from-to file ops      ##
+## =================================##
+
+def export_edges_as_csv(edges_list, export_file='data/edges_list.csv'):
+    edge_names = []
+    edge_weights = []
+    edge_enablers = []
+    for edge in edges_list:
+        edge_names.append(edge.edge_name)
+        edge_weights.append(edge.usage_weight)
+        edge_enablers.append(edge.print_enabled)
+    # create dict in order to create a pandas dataframe
+    edges_dict = {'Όνομα Διαδρομής': edge_names,
+                  'Τιμή Φόρτου': edge_weights,
+                  'Ενεργοποιημένη': edge_enablers}
+    df = pd.DataFrame(edges_dict)
+    df.to_csv(export_file, sep='\t')
+
+
+def import_edges_settings(edges_list, import_file='data/edges_list.csv', delim='\t',
+                          df_key='Όνομα Διαδρομής', df_val='Ενεργοποιημένη'):
+    # read the edges file
+    file_edges_df = pd.read_csv(import_file, delimiter=delim)
+    file_edges_df = file_edges_df[file_edges_df[df_val].astype(str).str.contains('False')]
+    activation_dict = dict(zip(file_edges_df[df_key], file_edges_df[df_val]))
+    # iterate all edges matching the same edges and
+    for file_edge_name in activation_dict:
+        for edge in edges_list:
+            # change the value to print to the edges list
+            if edge.edge_name == str(file_edge_name):
+                edge.print_enabled = activation_dict[file_edge_name]
+
+## =================================##
+##  edges from-to file ops end      ##
+## =================================##
 
 
 def main():

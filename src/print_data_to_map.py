@@ -211,9 +211,10 @@ def print_flows(products_file, nodes_list, edges_list, nx_graph):
         scaled_weight = _get_scaled_weight(edge, old_range, min_val)
         scaled_color = _set_scaled_color(scaled_weight)
         route_title_name, route_name_weight = _get_route_details(edge)
-        paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
-                        lat_lines_list, lon_lines_list, scaled_color, scaled_weight,
-                        route_title_name, route_name_weight)
+        if edge.print_enabled:
+            paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
+                            lat_lines_list, lon_lines_list, scaled_color, scaled_weight,
+                            route_title_name, route_name_weight)
     return fig, edges_list, nodes_list
 
 

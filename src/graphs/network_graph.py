@@ -43,6 +43,7 @@ class Edge:
         self.duration = 0
         self.edge_name = self.set_edge_name(from_node, to_node)
         self.usage_weight = 0
+        self.print_enabled = True
     
     def compute_geometry(self):
         from_n = osrm.Point(latitude=self.from_node.lat,
@@ -104,6 +105,7 @@ class Edge:
             self.edge_lat_list.append(lat)
             self.edge_lon_list.append(lon)
         return (self.edge_lat_list, self.edge_lon_list)
+    
     
     def is_node_in_edge(self, node_name):
         if node_name in self.edge_name:
