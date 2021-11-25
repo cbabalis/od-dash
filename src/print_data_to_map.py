@@ -315,7 +315,7 @@ def _set_scaled_color(weight, max_threshold=15):
 def _get_route_details(edge):
     """ method to get route name and weight."""
     route_name = edge.edge_name
-    route_flow = "Κίνηση: " + str(edge.usage_weight)
+    route_flow = "Κίνηση: " + str(round(edge.usage_weight, 2))
     return route_name, route_flow
 
 

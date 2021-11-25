@@ -717,6 +717,7 @@ def update_edges_output(click_value):
     hidden_edges_dict = {'Μετακίνηση μεταξύ Περιφερειακών Ενοτήτων': hidden_edges_names,
                          'Μετακινούμενες Ποσότητες από Θαλάσσης': hidden_edges_weights}
     hidden_df = pd.DataFrame(hidden_edges_dict)
+    hidden_df = hidden_df.sort_values(by=['Μετακινούμενες Ποσότητες από Θαλάσσης'], ascending=False)
     df_temp = hidden_df.round(2)
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
