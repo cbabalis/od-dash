@@ -85,6 +85,7 @@ def sumprod(li1, li2, l3):
         return sumproduct
     except TypeError:
         print("ERROR: must be numbers!")
+        print("l1 is ", l1, " l2 is ", l2, "and l3 is ", l3)
 
 
 def compute_T_i_j(A_i, prods, B_j, cons, movement):
@@ -322,7 +323,8 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, internal_mvment_pcn
     # do some preliminary work
     B_j = [1 for i in range(0, len(prod_cons_tn))]
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
-    populate_diagonal_elements(T, prod_cons_tn)
+    if internal_mvment_pcnt > 0:
+        populate_diagonal_elements(T, prod_cons_tn)
     results_file_path = 'results/output.csv'
     write_matrix_to_file(T, results_file_path, sep='\t', cols=movement.columns.tolist())
     # return the path of the new matrix to show as path
