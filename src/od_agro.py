@@ -186,7 +186,10 @@ def create_this_table(legend, df_temp, results_cols, styles):
             editable=True,
             filter_action='native',
             row_selectable="multi",
-            style_data_conditional=styles
+            style_data_conditional=styles,
+            export_format='xlsx',
+            export_headers='display',
+            merge_duplicate_headers=True
         ),
     ])
 
@@ -681,7 +684,10 @@ def func(n_clicks, prod_cons_matrix, region_lvl):
 def print_flows(n_clicks,):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'networkx-button' in changed_id:
-        products_f = 'results/output-1.csv' #mydf.csv'
+        global download_df
+        csv_filepath = results_path + results_filepath
+        download_df.to_csv(csv_filepath, sep='\t')
+        products_f = csv_filepath #'results/output-1.csv' #mydf.csv'
         global edges_list
         global nodes_list
         global nx_graph
@@ -746,28 +752,7 @@ def update_edges_output(click_value):
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
     results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
-    return html.Div([
-        html.Div(legend, style={'float': 'right'}),
-        dash_table.DataTable(
-            data=df_temp.to_dict('records'),
-            sort_action='native',
-            columns= results_cols,
-            page_action="native",
-            page_current= 0,
-            page_size= 15,
-            style_table={
-                'maxHeight': '50%',
-                'overflowY': 'scroll',
-                'width': '100%',
-                'minWidth': '10%',
-            },
-            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-            editable=True,
-            filter_action='native',
-            row_selectable="multi",
-            style_data_conditional=styles
-        ),
-    ])
+    return create_this_table(legend, df_temp, results_cols, styles)
 
 
 @app.callback(
@@ -784,31 +769,7 @@ def update_edges_output(click_value):
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
     results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
-    return html.Div([
-        html.Div(legend, style={'float': 'right'}),
-        dash_table.DataTable(
-            data=df_temp.to_dict('records'),
-            sort_action='native',
-            columns= results_cols,
-            page_action="native",
-            page_current= 0,
-            page_size= 15,
-            style_table={
-                'maxHeight': '50%',
-                'overflowY': 'scroll',
-                'width': '100%',
-                'minWidth': '10%',
-            },
-            style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-            editable=True,
-            filter_action='native',
-            row_selectable="multi",
-            style_data_conditional=styles,
-            export_format='xlsx',
-            export_headers='display',
-            merge_duplicate_headers=True
-        ),
-    ])
+    return create_this_table(legend, df_temp, results_cols, styles)
 
 
 
