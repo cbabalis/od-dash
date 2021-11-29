@@ -146,9 +146,9 @@ def create_nodes_df(nodes_list, edges_list):
         nodes_passing_vals.append(node.passing_weight)
     nodes_dict = {'Περιφερειακή Ενότητα':nodes_names,
                     'Συνολικό Διακινηθέν Φορτίο (σε κιλά)':nodes_vals,
-                    'Φορτίο που Εκκινά από':nodes_from_vals,
-                    'Φορτίο που Καταλήγει σε': nodes_to_vals,
-                    'Μετακινούμενο Φορτίο':nodes_passing_vals}
+                    'Εκκινούν':nodes_from_vals,
+                    'Καταλήγουν': nodes_to_vals,
+                    'Διέρχονται':nodes_passing_vals}
     dff = pd.DataFrame(nodes_dict)
     dff = dff.sort_values(by=['Συνολικό Διακινηθέν Φορτίο (σε κιλά)'], ascending=False)
     return dff.round()
@@ -311,6 +311,7 @@ app.layout = html.Div([
                             'margin-right':'auto',
                             'display':'block'}),
                 dcc.Dropdown(id='region-selection',
+                            value='ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ',
                             style={"display": "block",
                     "margin-left": "auto",
                     "margin-right": "auto",
@@ -323,6 +324,7 @@ app.layout = html.Div([
                         style={'font-weight': 'bold',
                                 'fontSize' : '17px'}),
                 dcc.Dropdown(id='availability-radio-resistance',
+                            value='exponential_function_74.csv',
                             style={"display": "block",
                     "margin-left": "auto",
                     "margin-right": "auto",
