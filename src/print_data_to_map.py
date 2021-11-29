@@ -197,7 +197,7 @@ def print_flows(products_file, nodes_list, edges_list, nx_graph):
         products_file (str): csv file that contains all flows towards all.
         centroids_list_file (str): csv file that contains all centroids.
     """
-    _get_flows_between_nodes(products_file, edges_list, nx_graph)
+    _get_flows_between_nodes(products_file, edges_list, nodes_list, nx_graph)
     # prepare each edge geometry and coordinates for printing
     colorscales = css_cols
     old_range, min_val = _compute_old_range(edges_list)
@@ -225,7 +225,7 @@ def get_network_as_graph(centroids_list_file):
     return nodes_list, edges_list, net_graph
 
 
-def _get_flows_between_nodes(products_file, edges_list, net_graph):
+def _get_flows_between_nodes(products_file, edges_list, nodes_list, net_graph):
     pdf = pd.read_csv(products_file, sep='\t')
     # drop first two columns as they contain redundant data.
     pdf = pdf.iloc[:,2:]
@@ -234,10 +234,10 @@ def _get_flows_between_nodes(products_file, edges_list, net_graph):
     # iterate over all regional units adding the weight.
     for unit in regional_units:
         values = pdf[unit].tolist()
-        _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, net_graph)
+        _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, nodes_list, net_graph)
 
 
-def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, net_graph):
+def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values, edges_list, nodes_list, net_graph):
     """method to add weight to edges consisting the minimum path of a flow.
     Algorithm:
     For each <from, to> pair:
@@ -255,6 +255,7 @@ def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values,
     for reg_unit, weight in zip(regional_units, values):
         try:
             dijkstra_path_nodes = nx.dijkstra_path(net_graph, unit, reg_unit)
+            _assign_weight_type_to_node(nodes_list, dijkstra_path_nodes, weight)
             # assign to each edge the weight corresponding to it
             for from_idx in range(len(dijkstra_path_nodes)-1):
                 to_idx = from_idx+1
@@ -318,6 +319,51 @@ def _get_route_details(edge):
     route_flow = "Κίνηση: " + str(round(edge.usage_weight, 2))
     return route_name, route_flow
 
+
+def _assign_weight_type_to_node(nodes_list, dijkstra_path_list, weight):
+    """
+    Method to assign weight to nodes depending on the type of the node.
+    If it is a "from" node (meaning weight is starting from there),
+    a "to" node (meaning weight is ending there) or
+    a "passing" node (meaning this is a node where the weight is transferred through).
+
+    Networkx dijkstra method returns a list of nodes for a certain path, including
+    from and to nodes. For instance, in a route A -> B -> C -> D the dijkstra method
+    return a list of [A, B, C, D].
+
+    nodes_list is a list containing all available nodes.
+    dijkstra path is a path of nodes in a certain route.
+    weight is the weight to be added to each node.
+    """
+    if len(dijkstra_path_list) < 2:
+        print("number of elements of list dijksta is ", len(dijkstra_path_list))
+    else:
+        _assign_from_to_nodes(dijkstra_path_list, nodes_list, weight)
+        if len(dijkstra_path_list) > 0:
+            for dijkstra_node in dijkstra_path_list:
+                # assign the weight to the right value in the node and continue.
+                _assign_weight_to_node(dijkstra_node, nodes_list, weight, weight_type='passing')
+
+
+def _assign_from_to_nodes(dijkstra_path_list, nodes_list, weight):
+        last_node = dijkstra_path_list.pop()
+        _assign_weight_to_node(last_node, nodes_list, weight, weight_type='to')
+        first_node = dijkstra_path_list.pop(0)
+        _assign_weight_to_node(last_node, nodes_list, weight, weight_type='from')
+
+
+def _assign_weight_to_node(dijkstra_node, nodes_list, weight, weight_type):
+    for node in nodes_list:
+        if node.name == dijkstra_node:
+            if weight_type == 'from':
+                node.from_weight += weight
+                break
+            elif weight_type == 'to':
+                node.to_weight += weight
+                break
+            else:
+                node.passing_weight += weight
+                break
 
 
 def main():

@@ -132,12 +132,22 @@ def create_nodes_df(nodes_list, edges_list):
     # create two lists containing the names of the nodes and the values respectively
     nodes_names = []
     nodes_vals = []
+    nodes_from_vals = []
+    nodes_to_vals = []
+    nodes_passing_vals = []
     for node in nodes_list:
         node_name = node.name
         node_weight = gops.get_total_weight_passing_from_node(node_name, edges_list)
         nodes_names.append(node_name)
         nodes_vals.append(node_weight)
-    nodes_dict = {'Περιφερειακή Ενότητα':nodes_names, 'Συνολικό Διακινηθέν Φορτίο (σε κιλά)':nodes_vals}
+        nodes_from_vals.append(node.from_weight)
+        nodes_to_vals.append(node.to_weight)
+        nodes_passing_vals.append(node.passing_weight)
+    nodes_dict = {'Περιφερειακή Ενότητα':nodes_names,
+                    'Συνολικό Διακινηθέν Φορτίο (σε κιλά)':nodes_vals,
+                    'Φορτίο που Εκκινά από':nodes_from_vals,
+                    'Φορτίο που Καταλήγει σε': nodes_to_vals,
+                    'Μετακινούμενο Φορτίο':nodes_passing_vals}
     dff = pd.DataFrame(nodes_dict)
     dff = dff.sort_values(by=['Συνολικό Διακινηθέν Φορτίο (σε κιλά)'], ascending=False)
     return dff.round(2)

@@ -13,6 +13,9 @@ class Vertex:
         self.neighbors_distance = {}
         self.neighbors_duration = {}
         self.total_weight = 0
+        self.from_weight = 0
+        self.to_weight = 0
+        self.passing_weight = 0
     
     def set_lat(self, lat):
         self.lat = lat
