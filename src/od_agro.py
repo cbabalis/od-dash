@@ -5,6 +5,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash_table import DataTable
+from dash_table.Format import Format, Scheme, Trim
 from dash.exceptions import PreventUpdate
 import pandas as pd
 import plotly.express as px
@@ -125,7 +126,7 @@ def create_edges_df(edges_list):
     edges_dict = {'Διαδρομή':edges_names, 'Συνολική Κίνηση':edges_vals}
     # create a dataframe from dictionary and return it
     dff = pd.DataFrame(edges_dict)
-    return dff.round(2)
+    return dff.round()
 
 
 def create_nodes_df(nodes_list, edges_list):
@@ -150,7 +151,7 @@ def create_nodes_df(nodes_list, edges_list):
                     'Μετακινούμενο Φορτίο':nodes_passing_vals}
     dff = pd.DataFrame(nodes_dict)
     dff = dff.sort_values(by=['Συνολικό Διακινηθέν Φορτίο (σε κιλά)'], ascending=False)
-    return dff.round(2)
+    return dff.round()
 
 
 def convert_od_to_two_cols_table(df):
@@ -220,6 +221,8 @@ def discrete_background_color_bins(df, n_bins=9, columns='all'):
         ((df_max - df_min) * i) + df_min
         for i in bounds
     ]
+    # make ranges integer
+    ranges = [int(interval) for interval in ranges]
     styles = []
     legend = []
     for i in range(1, len(bounds)):
@@ -406,7 +409,7 @@ app.layout = html.Div([
                 'textAlign':'center',
                 'width': '220px',
                 'margin':'auto'}),
-        html.Label("Μετακινούμενες Ποσότητες από Θάλασσα",
+        html.Label("Μεταφορές μεταξύ ΛΙμένων και Νησιωτικών Περιφερειακών Ενοτήτων",
                    style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'margin-left':'auto',
@@ -414,7 +417,7 @@ app.layout = html.Div([
                             'display':'block'}),
         html.Div(id='hidden-edges-table',  className='tableDiv'),
         html.Hr(),
-        html.Label("Μετακινούμενες Ποσότητες μεταξύ Περιφερειακών Ενοτήτων",
+        html.Label("Μεταφερόμενες Ποσότητες μεταξύ Περιφερειακών Ενοτήτων",
                    style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'margin-left':'auto',
@@ -422,7 +425,7 @@ app.layout = html.Div([
                             'display':'block'}),
         html.Div(id='edges-table',  className='tableDiv'),
         html.Hr(),
-        html.Label("Μετακινούμενες Ποσότητες ανά Περιφερειακή Ενότητα",
+        html.Label("Μεταφερόμενες Ποσότητες ανά Περιφερειακή Ενότητα",
                    style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'margin-left':'auto',
@@ -458,7 +461,7 @@ def set_region_group_by_options(selected_country):
     ])
 def set_display_table(selected_prod_cons_matrix, reg_sel):
     dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
-    df_temp = dff.round(2)
+    df_temp = dff.round()
     # assign names to a list
     global resistance_title_names
     if reg_sel in df_temp.columns:
@@ -471,7 +474,7 @@ def set_display_table(selected_prod_cons_matrix, reg_sel):
     return html.Div([
         dash_table.DataTable(
             id='main-table',
-            columns=[{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns],
+            columns=[{'name': i, 'id': i, 'hideable':True, 'type':'numeric', 'format':Format().group(True)} for i in df_temp.columns],
              data=df_temp.to_dict('rows'),
              editable=True,
              filter_action='native',
@@ -619,7 +622,7 @@ def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl, 
     df_temp = dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
-    results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns] #_get_od_column_names(resistance_title_names, nuts_names, df_temp)
+    results_cols = [{'name': i, 'id': i, 'hideable':True, 'format':Format().group(True)} for i in df_temp.columns] #_get_od_column_names(resistance_title_names, nuts_names, df_temp)
     # following five lines are about to create a file for downloading the results
     results_index = df_temp.columns.tolist()
     results_index.pop(0)
@@ -731,13 +734,13 @@ def update_edges_output(click_value):
         hidden_edges_names.append(edge.edge_name)
         hidden_edges_weights.append(edge.usage_weight)
     hidden_edges_dict = {'Μετακίνηση μεταξύ Περιφερειακών Ενοτήτων': hidden_edges_names,
-                         'Μετακινούμενες Ποσότητες από Θαλάσσης': hidden_edges_weights}
+                         'Μεταφερόμενες Ποσότητες από Θαλάσσης': hidden_edges_weights}
     hidden_df = pd.DataFrame(hidden_edges_dict)
-    hidden_df = hidden_df.sort_values(by=['Μετακινούμενες Ποσότητες από Θαλάσσης'], ascending=False)
-    df_temp = hidden_df.round(2)
+    hidden_df = hidden_df.sort_values(by=['Μεταφερόμενες Ποσότητες από Θαλάσσης'], ascending=False)
+    df_temp = hidden_df.round()
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
-    results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
+    results_cols = [{'name': i, 'id': i, 'hideable':True, 'format':Format().group(True)} for i in df_temp.columns]
     return create_this_table(legend, df_temp, results_cols, styles)
 
 
