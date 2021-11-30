@@ -174,7 +174,7 @@ def convert_od_to_two_cols_table(df):
     orig_dest_dict = {'Όνομα Διαδρομής':names_list, 'Μεταφερόμενη Ποσότητα (σε κιλά)':weights_list}
     dff = pd.DataFrame(orig_dest_dict)
     dff = dff.sort_values(by=['Μεταφερόμενη Ποσότητα (σε κιλά)'], ascending=False)
-    return dff.round(2)
+    return dff.round()
 
 
 def create_this_table(legend, df_temp, results_cols, styles):
@@ -291,7 +291,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Div([
-                html.Label("ΣΤΟΙΧΕΙΑ ΠΑΡΑΓΩΓΗΣ-ΚΑΤΑΝΑΛΩΣΗΣ",
+                html.Label("ΒΗΜΑ #1: ΡΟΕΣ ΠΑΡΑΓΩΓΗΣ - ΚΑΤΑΝΑΛΩΣΗΣ",
                     style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'margin-left':'auto',
@@ -320,7 +320,7 @@ app.layout = html.Div([
                 ## end of radio button to select by what
             ], className='four columns'),
             html.Div([
-                html.Label("ΜΗΤΡΩΟ ΑΝΤΙΣΤΑΣΗΣ ΜΕΤΑΚΙΝΗΣΕΩΝ",
+                html.Label("ΒΗΜΑ #2: ΜΗΤΡΩΟ ΑΝΤΙΣΤΑΣΗΣ ΜΕΤΑΚΙΝΗΣΕΩΝ",
                         style={'font-weight': 'bold',
                                 'fontSize' : '17px'}),
                 dcc.Dropdown(id='availability-radio-resistance',
