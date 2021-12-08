@@ -147,8 +147,8 @@ def create_nodes_df(nodes_list, edges_list):
         nodes_vals.append(node.from_weight + node.to_weight + node.passing_weight)
     nodes_dict = {'Περιφερειακή Ενότητα':nodes_names,
                     'Συνολικό Διακινηθέν Φορτίο (σε κιλά)':nodes_vals,
-                    'Εκκινούν':nodes_from_vals,
-                    'Καταλήγουν': nodes_to_vals,
+                    'Καταλήγουν':nodes_from_vals,
+                    'Εκκινούν': nodes_to_vals,
                     'Διέρχονται':nodes_passing_vals}
     dff = pd.DataFrame(nodes_dict)
     dff = dff.sort_values(by=['Συνολικό Διακινηθέν Φορτίο (σε κιλά)'], ascending=False)

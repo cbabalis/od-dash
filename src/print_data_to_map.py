@@ -15,6 +15,7 @@ import network_operations as net_ops
 from from_to_pair import FromToPair
 import graphs.graph_ops as gops
 import networkx as nx
+import copy
 import pdb
 
 
@@ -211,7 +212,7 @@ def print_flows(products_file, nodes_list, edges_list, nx_graph):
         scaled_weight = _get_scaled_weight(edge, old_range, min_val)
         scaled_color = _set_scaled_color(scaled_weight)
         route_title_name, route_name_weight = _get_route_details(edge)
-        if edge.print_enabled:
+        if edge.print_enabled and edge.usage_weight > 0:
             paint_data_to_figure(fig, lat_nodes_list, lon_nodes_list,
                             lat_lines_list, lon_lines_list, scaled_color, scaled_weight,
                             route_title_name, route_name_weight)
@@ -255,14 +256,14 @@ def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values,
     for reg_unit, weight in zip(regional_units, values):
         try:
             dijkstra_path_nodes = nx.dijkstra_path(net_graph, unit, reg_unit)
-            _assign_weight_type_to_node(nodes_list, dijkstra_path_nodes, weight)
+            _assign_weight_type_to_node(nodes_list, copy.deepcopy(dijkstra_path_nodes), weight)
             # assign to each edge the weight corresponding to it
             for from_idx in range(len(dijkstra_path_nodes)-1):
                 to_idx = from_idx+1
                 for edge in edges_list:
-                    #if edge.are_both_nodes_in_edge(dijkstra_path_nodes[from_idx], dijkstra_path_nodes[to_idx]):
-                    if edge.is_node_in_edge(dijkstra_path_nodes[from_idx]) or\
-                        edge.is_node_in_edge(dijkstra_path_nodes[to_idx]):
+                    if edge.are_both_nodes_in_edge(dijkstra_path_nodes[from_idx], dijkstra_path_nodes[to_idx]):
+                    #if edge.is_node_in_edge(dijkstra_path_nodes[from_idx]) or\
+                    #    edge.is_node_in_edge(dijkstra_path_nodes[to_idx]):
                         edge.add_to_usage_weight(weight)
         except nx.NetworkXNoPath:
             print("No path between ", unit, " and ", reg_unit)
@@ -284,7 +285,7 @@ def _compute_old_range(edges_list):
     return old_range, min_val
 
 
-def _get_scaled_weight(edge, old_range, min_val, new_range=15):
+def _get_scaled_weight(edge, old_range, min_val, new_range=12):
     """scaling takes place according to this:
     NewValue = (((OldValue - OldMin) * NewRange) / OldRange) + NewMin
     
@@ -304,12 +305,12 @@ def _get_scaled_weight(edge, old_range, min_val, new_range=15):
     return weight
 
 
-def _set_scaled_color(weight, max_threshold=15):
-    if weight < max_threshold/4:
+def _set_scaled_color(weight, max_threshold=12):
+    if weight < max_threshold/4 + 3:
         return 'rgb(0, 255, 0)'
-    elif weight < max_threshold/3:
+    elif weight < 2*max_threshold/4 + 3:
         return 'rgb(255, 255, 0)'
-    elif weight < max_threshold/2:
+    elif weight < 3*max_threshold/4 + 3:
         return 'rgb(255, 165, 0)'
     else:
         return 'rgb(255, 0, 0)'
@@ -318,7 +319,8 @@ def _set_scaled_color(weight, max_threshold=15):
 def _get_route_details(edge):
     """ method to get route name and weight."""
     route_name = edge.edge_name
-    route_flow = "Κίνηση: " + str(round(edge.usage_weight, 2))
+    #route_flow = "Κίνηση: " + str(round(edge.usage_weight, 2))
+    route_flow = str(route_name) + ":" + str(int(edge.usage_weight)) + " κιλά"
     return route_name, route_flow
 
 
@@ -339,7 +341,7 @@ def _assign_weight_type_to_node(nodes_list, dijkstra_path_list, weight):
     """
     if len(dijkstra_path_list) < 2:
         single_node = dijkstra_path_list.pop()
-        print("number of elements of list dijksta is ", len(dijkstra_path_list), " and it is ", str(single_node))
+        #print("number of elements of list dijksta is ", len(dijkstra_path_list), " and it is ", str(single_node))
         #_assign_weight_to_node(single_node, nodes_list, weight, weight_type='from')
         #_assign_weight_to_node(single_node, nodes_list, weight, weight_type='to')
     else:
