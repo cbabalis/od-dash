@@ -77,7 +77,7 @@ class Edge:
         """
         self.edge_name = str(from_node.name) + str("-") + str(to_node.name)
     
-    def are_nodes_in_edge(self, from_node_name, to_node_name):
+    def are_both_nodes_in_edge(self, from_node_name, to_node_name):
         """Method to check if from and to nodes are in this edge
 
         Args:

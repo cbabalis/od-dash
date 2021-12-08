@@ -138,12 +138,13 @@ def create_nodes_df(nodes_list, edges_list):
     nodes_passing_vals = []
     for node in nodes_list:
         node_name = node.name
-        node_weight = gops.get_total_weight_passing_from_node(node_name, edges_list)
+        #node_weight = gops.get_total_weight_passing_from_node(node_name, edges_list)
         nodes_names.append(node_name)
-        nodes_vals.append(node_weight)
+        #nodes_vals.append(node_weight)
         nodes_from_vals.append(node.from_weight)
         nodes_to_vals.append(node.to_weight)
         nodes_passing_vals.append(node.passing_weight)
+        nodes_vals.append(node.from_weight + node.to_weight + node.passing_weight)
     nodes_dict = {'Περιφερειακή Ενότητα':nodes_names,
                     'Συνολικό Διακινηθέν Φορτίο (σε κιλά)':nodes_vals,
                     'Εκκινούν':nodes_from_vals,
@@ -262,7 +263,7 @@ def discrete_background_color_bins(df, n_bins=9, columns='all'):
 
 
 # initialize network construction
-centroids_f = 'data/geodata_names/perif_centroids.csv'
+centroids_f = 'data/geodata_names/perif_centroids_abal.csv'
 nodes_list, edges_list, nx_graph = print_data_to_map.get_network_as_graph(centroids_f)
 # remove any edges that are not suitable for print
 gops.import_edges_settings(edges_list)
@@ -411,7 +412,7 @@ app.layout = html.Div([
                 'textAlign':'center',
                 'width': '220px',
                 'margin':'auto'}),
-        html.Label("Μεταφορές μεταξύ ΛΙμένων και Νησιωτικών Περιφερειακών Ενοτήτων",
+        html.Label("Μεταφορές μεταξύ Λιμένων και Νησιωτικών Περιφερειακών Ενοτήτων",
                    style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'margin-left':'auto',
@@ -565,7 +566,7 @@ def set_display_table(selected_resistance_matrix):
                 'minWidth': '10%',
             },
             style_header={'backgroundColor': 'rgb(200,200,200)', 'width':'auto'},
-            style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px','overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
+            style_cell={'backgroundColor': 'rgb(230,230,230)','color': 'black','height': 'auto','minWidth': '100px', 'width': '150px', 'maxWidth': '180px', 'whiteSpace': 'normal'}, #'overflow': 'hidden', 'textOverflow': 'ellipsis', },#minWidth': '0px', 'maxWidth': '180px', 'whiteSpace': 'normal'},
             #style_cell={'minWidth': '120px', 'width': '150px', 'maxWidth': '180px'},
             style_data={'whiteSpace': 'auto','height': 'auto','width': 'auto'},
             tooltip_data=[
@@ -740,6 +741,8 @@ def update_edges_output(click_value):
     hidden_df = pd.DataFrame(hidden_edges_dict)
     hidden_df = hidden_df.sort_values(by=['Μεταφερόμενες Ποσότητες από Θαλάσσης'], ascending=False)
     df_temp = hidden_df.round()
+    # get all values bigger than zeros
+    df_temp = df_temp[df_temp['Μεταφερόμενες Ποσότητες από Θαλάσσης'] > 0]
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
     results_cols = [{'name': i, 'id': i, 'hideable':True, 'format':Format().group(True)} for i in df_temp.columns]
@@ -763,7 +766,7 @@ def update_edges_output(click_value):
         return dash.no_update
     global download_df
     edges_dff = convert_od_to_two_cols_table(download_df) #create_edges_df(edges_list)
-    df_temp = edges_dff
+    df_temp = edges_dff[edges_dff['Μεταφερόμενη Ποσότητα (σε κιλά)'] > 0]
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
     results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]

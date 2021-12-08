@@ -260,7 +260,9 @@ def _add_weight_to_edges_participating_to_min_path(unit, regional_units, values,
             for from_idx in range(len(dijkstra_path_nodes)-1):
                 to_idx = from_idx+1
                 for edge in edges_list:
-                    if edge.are_nodes_in_edge(dijkstra_path_nodes[from_idx], dijkstra_path_nodes[to_idx]):
+                    #if edge.are_both_nodes_in_edge(dijkstra_path_nodes[from_idx], dijkstra_path_nodes[to_idx]):
+                    if edge.is_node_in_edge(dijkstra_path_nodes[from_idx]) or\
+                        edge.is_node_in_edge(dijkstra_path_nodes[to_idx]):
                         edge.add_to_usage_weight(weight)
         except nx.NetworkXNoPath:
             print("No path between ", unit, " and ", reg_unit)
@@ -307,7 +309,7 @@ def _set_scaled_color(weight, max_threshold=15):
         return 'rgb(0, 255, 0)'
     elif weight < max_threshold/3:
         return 'rgb(255, 255, 0)'
-    elif weight < max_threshold/3:
+    elif weight < max_threshold/2:
         return 'rgb(255, 165, 0)'
     else:
         return 'rgb(255, 0, 0)'
@@ -336,7 +338,10 @@ def _assign_weight_type_to_node(nodes_list, dijkstra_path_list, weight):
     weight is the weight to be added to each node.
     """
     if len(dijkstra_path_list) < 2:
-        print("number of elements of list dijksta is ", len(dijkstra_path_list))
+        single_node = dijkstra_path_list.pop()
+        print("number of elements of list dijksta is ", len(dijkstra_path_list), " and it is ", str(single_node))
+        #_assign_weight_to_node(single_node, nodes_list, weight, weight_type='from')
+        #_assign_weight_to_node(single_node, nodes_list, weight, weight_type='to')
     else:
         _assign_from_to_nodes(dijkstra_path_list, nodes_list, weight)
         if len(dijkstra_path_list) > 0:
@@ -349,7 +354,7 @@ def _assign_from_to_nodes(dijkstra_path_list, nodes_list, weight):
         last_node = dijkstra_path_list.pop()
         _assign_weight_to_node(last_node, nodes_list, weight, weight_type='to')
         first_node = dijkstra_path_list.pop(0)
-        _assign_weight_to_node(last_node, nodes_list, weight, weight_type='from')
+        _assign_weight_to_node(first_node, nodes_list, weight, weight_type='from')
 
 
 def _assign_weight_to_node(dijkstra_node, nodes_list, weight, weight_type):
@@ -370,7 +375,7 @@ def main():
     #simple_scenario("/home/blaxeep/Downloads/geolist.pkl")
     fig = scenario_print_traffic("/home/blaxeep/Downloads/geolist.pkl")
     products_f = '/home/blaxeep/workspace/od-dash/results/output-1.csv' #mydf.csv'
-    centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids.csv'
+    centroids_f = '/home/blaxeep/workspace/od-dash/data/geodata_names/perif_centroids_abal.csv'
     nodes_list, edges_list, nx_graph = get_network_as_graph(centroids_f)
     fig, edges_list, nodes_list = print_flows(products_f, nodes_list, edges_list, nx_graph)
     pdb.set_trace()

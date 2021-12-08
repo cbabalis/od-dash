@@ -127,7 +127,7 @@ def populate_edges_list(edges_list, nodes_list, neighbors_list, tuples):
 
 def  _edge_exists(edges_list, from_node, to_node):
     for edge in edges_list:
-        if edge.are_nodes_in_edge(from_node.name, to_node.name):
+        if edge.are_both_nodes_in_edge(from_node.name, to_node.name):
             return True
     return False
     
