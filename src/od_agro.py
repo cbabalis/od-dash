@@ -24,6 +24,7 @@ import print_data_to_map
 import graphs.graph_ops as gops
 from dash_extensions import Download
 from dash_extensions.snippets import send_data_frame
+from datetime import datetime
 import pdb
 
 
@@ -41,6 +42,8 @@ resistance_files = [f for f in listdir(resistance_path) if isfile(join(resistanc
 
 results_path = 'results/'
 results_filepath = 'output.csv'
+
+od_matrices_path = 'data/od_matrices/'
 
 matrix_text = '''
 #### OD Matrix κείμενο εδώ
@@ -94,6 +97,26 @@ resistance_title_names = []
 
 chart_types = ['Γράφημα Στήλης', 'Γράφημα Πίτας']
 month_dict = {0: 'Όλοι οι μήνες', 1:'Ιανουάριος', 2:'Φεβρουάριος', 3:'Μάρτιος', 4:'Απρίλιος', 5:'Μάιος', 6:'Ιούνιος', 7:'Ιούλιος', 8:'Αύγουστος', 9:'Σεπτέμβριος', 10:'Οκτώβριος', 11:'Νοέμβριος', 12:'Δεκέμβριος'}
+
+
+
+def _create_results_name(user_input=''):
+    """Method to create a new name for the results
+
+    Args:
+        user_input (str, optional): [description]. Defaults to ''.
+
+    Returns:
+        [type]: [description]
+    """
+    now = datetime.now()
+    created_on = now.strftime(("%Y-%m-%d-%H-%M-%S"))
+    results_name = user_input
+    if not user_input:
+        results_name = 'custom_file_' + str(created_on) + '.csv'
+    else:
+        results_name = user_input + "_" + str(created_on) + '.csv'
+    return results_name
 
 
 def modify_row_titles(df, names, mod_col='Unnamed: 0'):
@@ -386,9 +409,30 @@ app.layout = html.Div([
     html.Hr(),
     html.Div(
         [
-            html.Button("Κατεβασμα δεδομένων (CSV)", id="btn_csv"),
+            html.Button("Κατεβασμα δεδομενων (CSV)", id="btn_csv"),
             Download(id="download-dataframe-csv"),
+            dcc.Input(id="custom_title_input", type="text", placeholder="", style={'marginLeft':'100px','marginRight':'10px'}),
+            html.Button("Αποθηκευση δεδομενων", id="btn_save", n_clicks=0),
+            html.Div(id='download-link'),
         ],
+    ),
+    html.Div(
+        [
+            html.Label("Επιλογή διαφορετικών Κατανομών Μετακινήσεων προς Προβολή",
+                    style={'font-weight': 'bold',
+                            'fontSize' : '17px',
+                            'textAlign':'center',
+                            'margin-left':'auto',
+                            'margin-right':'auto',
+                            'display':'block'}
+                    ),
+            dcc.Dropdown(id='multi_od_selection',
+                        style={'margin-bottom': '10px',
+                               'textAlign':'center',
+                               'width': '1020px',
+                               'margin':'auto'}
+                        ),
+        ]
     ),
     html.Div([
         html.Button('Κατανομη στο Δικτυο (networkX)', id='networkx-button', n_clicks=0),
@@ -683,15 +727,6 @@ def displayClick(btn1, btn2):
 def func(n_clicks, prod_cons_matrix, region_lvl):
     temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
     return send_data_frame(download_df.to_csv, results_filepath)#"mydf.csv") # dash_extensions.snippets: send_data_frame
-    # temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
-    # resistance_title_cols = temp_dff[region_lvl].unique()
-    # resistance_title_cols = resistance_title_cols.tolist()
-    # assert len(resistance_title_cols) == len(download_df), "lengths are not the same: %d, %d" % (len(resistance_title_cols), len(download_df))
-    # if 'Unnamed: 0' in download_df:
-    #     del download_df['Unnamed: 0']
-    # download_df.columns = resistance_title_cols
-    # download_df.insert(0, 'Unnamed: 0', resistance_title_cols)
-    # return send_data_frame(download_df.to_csv, "mydf.csv") # dash_extensions.snippets: send_data_frame
 
 
 @app.callback(
@@ -788,6 +823,25 @@ def update_edges_output(click_value):
     # create results columns' names
     results_cols = [{'name': i, 'id': i, 'hideable':True} for i in df_temp.columns]
     return create_this_table(legend, df_temp, results_cols, styles)
+
+
+################    methods to save and to combine ods to single flows #######
+
+@app.callback(Output('download-link', 'children'),
+              Input('btn_save', 'n_clicks'),
+              State('custom_title_input', 'value'))
+def save_df_conf_to_disk(btn_click, title_input_val):
+    # compute timestamp and name the filename.
+    results_name = _create_results_name(title_input_val)
+    fpath = od_matrices_path + results_name
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'btn_save' in changed_id:
+        global download_df
+        download_df.to_csv(fpath, sep='\t', index=False)
+        msg = 'Δημιουργήθηκε αρχείο μετακινήσεων με όνομα ' + results_name
+    else:
+        msg = 'Δεν αποθηκεύθηκαν οι αλλαγές σε αρχείο.'
+    return html.Div(msg)
 
 
 
