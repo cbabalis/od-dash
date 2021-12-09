@@ -1,4 +1,6 @@
 import random
+
+from pandas.core.frame import DataFrame
 import dash
 import dash_table
 import dash_core_components as dcc
@@ -99,7 +101,6 @@ chart_types = ['Γράφημα Στήλης', 'Γράφημα Πίτας']
 month_dict = {0: 'Όλοι οι μήνες', 1:'Ιανουάριος', 2:'Φεβρουάριος', 3:'Μάρτιος', 4:'Απρίλιος', 5:'Μάιος', 6:'Ιούνιος', 7:'Ιούλιος', 8:'Αύγουστος', 9:'Σεπτέμβριος', 10:'Οκτώβριος', 11:'Νοέμβριος', 12:'Δεκέμβριος'}
 
 
-
 def _create_results_name(user_input=''):
     """Method to create a new name for the results
 
@@ -117,6 +118,35 @@ def _create_results_name(user_input=''):
     else:
         results_name = user_input + "_" + str(created_on) + '.csv'
     return results_name
+
+
+def create_combination_of_od_matrices(download_df, df_names_list):
+    """Method to create a combination of df sums according to the df_names_list.
+    This method adds all files that are found in df_names_list.
+    
+    If it is empty then the df remains as is.
+
+    Args:
+        download_df (Dataframe): Global df to download.
+        df_names_list (list): list of filenames containing od configurations.
+    """
+    # if list is empty then return an appropriate message and exit
+    if not df_names_list:
+        return download_df
+    else:
+        # else, read each csv to a dataframe
+        combo_df = load_matrix(od_matrices_path, str(df_names_list.pop()))
+        column_to_hold = 'Unnamed: 0'
+        titles = combo_df.loc[:, column_to_hold]
+        if df_names_list:
+            for od_df in df_names_list:
+                new_df = load_matrix(od_matrices_path, od_df)
+                # and combine all dataframes to one.
+                combo_df = combo_df + new_df
+        combo_df[column_to_hold] = titles
+        download_df = combo_df
+        # finally return an appropriate message.
+        return download_df
 
 
 def modify_row_titles(df, names, mod_col='Unnamed: 0'):
@@ -427,11 +457,24 @@ app.layout = html.Div([
                             'display':'block'}
                     ),
             dcc.Dropdown(id='multi_od_selection',
-                        style={'margin-bottom': '10px',
+                         multi=True,
+                         options=[],
+                         placeholder='Επιλέξτε ένα ή περισσότερα αρχεία προς προβολή',
+                         style={'margin-bottom': '10px',
                                'textAlign':'center',
                                'width': '1020px',
                                'margin':'auto'}
                         ),
+            html.Div([
+                html.Button('ΟΡΙΣΤΙΚΟΠΟΙΗΣΗ ΕΠΙΛΟΓΩΝ',
+                            id='submit_multi_ods',
+                            n_clicks=0),
+            ],style={'margin-bottom': '10px',
+                               'textAlign':'center',
+                               'margin':'auto'}
+            ),
+            html.Div(id='submit_multi_ods_output'),
+            html.Hr(),
         ]
     ),
     html.Div([
@@ -841,6 +884,30 @@ def save_df_conf_to_disk(btn_click, title_input_val):
         msg = 'Δημιουργήθηκε αρχείο μετακινήσεων με όνομα ' + results_name
     else:
         msg = 'Δεν αποθηκεύθηκαν οι αλλαγές σε αρχείο.'
+    return html.Div(msg)
+
+
+@app.callback(
+    Output('multi_od_selection', 'options'),
+    Input('multi_od_selection', 'value'))
+def set_products_options(selected_files):
+    od_files = [f for f in listdir(od_matrices_path) if isfile(join(od_matrices_path, f))]
+    return [{'label': i, 'value': i} for i in od_files]
+
+
+@app.callback(
+    Output('submit_multi_ods_output', 'children'),
+    Input('submit_multi_ods', 'n_clicks'),
+    State('multi_od_selection', 'value'),
+)
+def set_global_download_df(btn_click, df_names_list):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'submit_multi_ods' in changed_id:
+        global download_df
+        download_df = create_combination_of_od_matrices(download_df, df_names_list)
+        msg = "Ο συνδυασμός των μετακινήσεων ολοκληρώθηκε."
+    else:
+        msg = 'Δεν ολοκληρώθηκε ο συνδυασμός των μετακινήσεων.'
     return html.Div(msg)
 
 
