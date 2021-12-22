@@ -99,7 +99,6 @@ def load_matrix(my_path, selected_matrix_fp, delim='\t'):
         return my_matrix
     except FileNotFoundError:
         print("inside load matrix path is ", matrix_filepath)
-        pdb.set_trace()
 
 
 sample_df = []
@@ -157,13 +156,11 @@ def create_combination_of_od_matrices(download_df, df_names_list):
     else:
         # else, read each csv to a dataframe
         user_od_matrices_path = get_user_path(od_matrices_path)
-        print("combo df gonna be")
         combo_df = load_matrix(user_od_matrices_path, str(df_names_list.pop()))
         column_to_hold = 'Unnamed: 0'
         titles = combo_df.loc[:, column_to_hold]
         if df_names_list:
             for od_df in df_names_list:
-                print("new df gonna be")
                 new_df = load_matrix(user_od_matrices_path, od_df)
                 # and combine all dataframes to one.
                 combo_df = combo_df + new_df
@@ -609,7 +606,6 @@ def set_region_group_by_options(selected_country):
     ])
 def set_display_table(selected_prod_cons_matrix, reg_sel):
     user_prod_cons_path = get_user_path(prod_cons_path)
-    print("user_prod_cons_path is always ", user_prod_cons_path)
     dff = load_matrix(user_prod_cons_path, selected_prod_cons_matrix)
     df_temp = dff.round()
     # assign names to a list
@@ -673,7 +669,6 @@ def set_products_options(selected_country):
     [Input('availability-radio-resistance', 'value'),
     ])
 def set_display_table(selected_resistance_matrix):
-    print("resistance path gonna be")
     dff = load_matrix(resistance_path, selected_resistance_matrix)
     # if (month_val):
     #     dff = dff[dff[MONTH] == month_val]
@@ -774,7 +769,6 @@ def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl, 
     results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, internal_pcnt, group_by_col=region_lvl, res_fpath=res_fpath)
     #dff = load_matrix(results_path, results_filepath)
     fpath = set_filepath(auth.get_current_username(), results_path, results_filepath)
-    print("fpath in 777 gonna be ", fpath)
     dff = load_matrix(fpath, results_filepath)
     df_temp = dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
@@ -835,8 +829,6 @@ def displayClick(btn1, btn2):
     prevent_initial_call=True,
 )
 def func(n_clicks, prod_cons_matrix, region_lvl):
-    #fpath = set_filepath(auth.get_current_username(), od_matrices_path, results_name)
-    print("cant be here")
     #temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
     fpath = set_filepath(auth.get_current_username(), results_path, results_filepath) +'output.csv'
     return send_data_frame(download_df.to_csv, fpath) #results_filepath)#"mydf.csv") # dash_extensions.snippets: send_data_frame
@@ -949,7 +941,6 @@ def save_df_conf_to_disk(btn_click, title_input_val):
     # compute timestamp and name the filename.
     results_name = _create_results_name(title_input_val)
     fpath = set_filepath(auth.get_current_username(), od_matrices_path, results_name) + results_name
-    print("fpath is ", fpath)
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save' in changed_id:
         global download_df
