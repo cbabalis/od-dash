@@ -27,8 +27,16 @@ import graphs.graph_ops as gops
 from dash_extensions import Download
 from dash_extensions.snippets import send_data_frame
 from datetime import datetime
+import dash_auth
 import pdb
 
+############# save in file/db. passwords!!
+VALID_USERNAME_PASSWORD_PAIRS = {
+    'user':'test',
+    'user2':'test2',
+    'admin':'admin'
+}
+#########################################
 
 my_path = 'data/'
 onlyfiles = [f for f in listdir(my_path) if isfile(join(my_path, f))]
@@ -42,7 +50,7 @@ prod_cons_path = 'data/prod_cons/'
 resistance_path = 'data/resistance/'
 resistance_files = [f for f in listdir(resistance_path) if isfile(join(resistance_path, f))]
 
-results_path = 'results/'
+results_path = 'data/od_matrices/' #'results/'
 results_filepath = 'output.csv'
 
 od_matrices_path = 'data/od_matrices/'
@@ -68,6 +76,15 @@ clarifications = '''
 '''
 
 
+guide_button_style = {'background-color': 'white', #'#177248',
+                      'color': 'black', #'#E9FFFF',
+                      #'height': '50px',
+                      #'width': '100px',
+                      'margin-top': '50px',
+                      'margin-left': '50px',
+                      'float':'right'}
+
+
 def refine_df(df):
     df = df.fillna(0)
     return df
@@ -76,9 +93,13 @@ def refine_df(df):
 def load_matrix(my_path, selected_matrix_fp, delim='\t'):
     if not my_path or not selected_matrix_fp:
         print("No matrix to load")
-    matrix_filepath = str(my_path) + str(selected_matrix_fp)
-    my_matrix = pd.read_csv(matrix_filepath, delimiter=delim)
-    return my_matrix
+    try:
+        matrix_filepath = str(my_path) + str(selected_matrix_fp)
+        my_matrix = pd.read_csv(matrix_filepath, delimiter=delim)
+        return my_matrix
+    except FileNotFoundError:
+        print("inside load matrix path is ", matrix_filepath)
+        pdb.set_trace()
 
 
 sample_df = []
@@ -135,12 +156,15 @@ def create_combination_of_od_matrices(download_df, df_names_list):
         return download_df
     else:
         # else, read each csv to a dataframe
-        combo_df = load_matrix(od_matrices_path, str(df_names_list.pop()))
+        user_od_matrices_path = get_user_path(od_matrices_path)
+        print("combo df gonna be")
+        combo_df = load_matrix(user_od_matrices_path, str(df_names_list.pop()))
         column_to_hold = 'Unnamed: 0'
         titles = combo_df.loc[:, column_to_hold]
         if df_names_list:
             for od_df in df_names_list:
-                new_df = load_matrix(od_matrices_path, od_df)
+                print("new df gonna be")
+                new_df = load_matrix(user_od_matrices_path, od_df)
                 # and combine all dataframes to one.
                 combo_df = combo_df + new_df
         combo_df[column_to_hold] = titles
@@ -206,6 +230,33 @@ def create_nodes_df(nodes_list, edges_list):
     dff = pd.DataFrame(nodes_dict)
     dff = dff.sort_values(by=['Συνολικό Διακινηθέν Φορτίο (σε κιλά)'], ascending=False)
     return dff.round()
+
+
+######### Authentication and Security #######
+def get_user_path(root_dir_path):
+    folder_path = root_dir_path + auth.get_current_username() + '/'
+    if not os.path.exists(folder_path):
+        print("username probably does not exist. error in path")
+    return folder_path
+
+
+def set_filepath(username, results_path, results_name):
+    """ Method to create (if it does not exist) a filepath for the files to
+    be saved.
+    IMPORTANT!
+    I 've changed the basic_auth module according to me in order for it to return
+    the username.
+    :param username: the username (custom method for me)
+    :param
+    """
+    print("username is ", username)
+    folder_path = results_path + username + '/'
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    return folder_path
+
+
+######### End of Authentication and Security ##########
 
 
 def convert_od_to_two_cols_table(df):
@@ -325,78 +376,84 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+auth = dash_auth.BasicAuth(
+    app,
+    VALID_USERNAME_PASSWORD_PAIRS
+)
+
 app.layout = html.Div([
-    html.H1("Μεταφορές μεταξύ Περιοχών (Μητρώο Προέλευσης/Προορισμού)",  style={'textAlign':'center'}),
-    html.Hr(),
-    # text here
     html.Div([
-    #dcc.Markdown(matrix_text),
-    dcc.ConfirmDialogProvider(children=html.Button(
-            'Οδηγίες Χρήσης',
-            style={'float': 'right','margin': 'auto'}
+        html.H1("Μεταφορές μεταξύ Περιοχών (Μητρώο Προέλευσης/Προορισμού)",  style={'textAlign':'center'}),
+        # text here
+        html.Div([
+        #dcc.Markdown(matrix_text),
+        dcc.ConfirmDialogProvider(children=html.Button(
+                'Οδηγίες Χρήσης',
+                style=guide_button_style #{'float': 'right','margin': 'auto'}
+            ),
+            id='danger-danger-provider',
+            message=help_text,
         ),
-        id='danger-danger-provider',
-        message=help_text,
-    ),
-    html.Div(id='output-provider')
-    ],
-             className='row'),
-    # filters here
-    html.Div([
+        html.Div(id='output-provider')
+        ],
+                className='row'),
+        # filters here
         html.Div([
             html.Div([
-                html.Label("ΒΗΜΑ #1: ΡΟΕΣ ΠΑΡΑΓΩΓΗΣ - ΚΑΤΑΝΑΛΩΣΗΣ",
-                    style={'font-weight': 'bold',
-                            'fontSize' : '17px',
-                            'margin-left':'auto',
-                            'margin-right':'auto',
-                            'display':'block'}),
-                dcc.Dropdown(id='availability-radio-prods-cons',
-                            style={"display": "block",
-                    "margin-left": "auto",
-                    "margin-right": "auto",
-                    # "width":"60%"
-                    }), # style solution here: https://stackoverflow.com/questions/51193845/moving-objects-bar-chart-using-dash-python
-                ## radio button to select by what
-                 html.Label("ΕΠΙΠΕΔΟ ΓΕΩΓΡΑΦΙΚΗΣ ΑΝΑΛΥΣΗΣ",
-                    style={'font-weight': 'bold',
-                            'fontSize' : '17px',
-                            'margin-left':'auto',
-                            'margin-right':'auto',
-                            'display':'block'}),
-                dcc.Dropdown(id='region-selection',
-                            value='ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ',
-                            style={"display": "block",
-                    "margin-left": "auto",
-                    "margin-right": "auto",
-                    # "width":"60%"
-                    }),
-                ## end of radio button to select by what
-            ], className='four columns'),
-            html.Div([
-                html.Label("ΒΗΜΑ #2: ΜΗΤΡΩΟ ΑΝΤΙΣΤΑΣΗΣ ΜΕΤΑΚΙΝΗΣΕΩΝ",
+                html.Div([
+                    html.Label("ΒΗΜΑ #1: ΡΟΕΣ ΠΑΡΑΓΩΓΗΣ - ΚΑΤΑΝΑΛΩΣΗΣ",
                         style={'font-weight': 'bold',
-                                'fontSize' : '17px'}),
-                dcc.Dropdown(id='availability-radio-resistance',
-                            value='exponential_function_74.csv',
-                            style={"display": "block",
-                    "margin-left": "auto",
-                    "margin-right": "auto",
-                    # "width":"60%"
-                    }),
-                dcc.ConfirmDialogProvider(children=html.Button(
-            'Διευκρινησεις',
-            style={'float': 'right','margin': 'auto','background-color':'white'}
+                                'fontSize' : '17px',
+                                'margin-left':'auto',
+                                'margin-right':'auto',
+                                'display':'block'}),
+                    dcc.Dropdown(id='availability-radio-prods-cons',
+                                style={"display": "block",
+                        "margin-left": "auto",
+                        "margin-right": "auto",
+                        # "width":"60%"
+                        }), # style solution here: https://stackoverflow.com/questions/51193845/moving-objects-bar-chart-using-dash-python
+                    ## radio button to select by what
+                    html.Label("ΕΠΙΠΕΔΟ ΓΕΩΓΡΑΦΙΚΗΣ ΑΝΑΛΥΣΗΣ",
+                        style={'font-weight': 'bold',
+                                'fontSize' : '17px',
+                                'margin-left':'auto',
+                                'margin-right':'auto',
+                                'display':'block'}),
+                    dcc.Dropdown(id='region-selection',
+                                value='ΠΕΡΙΦΕΡΕΙΑΚΕΣ ΕΝΟΤΗΤΕΣ',
+                                style={"display": "block",
+                        "margin-left": "auto",
+                        "margin-right": "auto",
+                        # "width":"60%"
+                        }),
+                    ## end of radio button to select by what
+                ], className='four columns'),
+                html.Div([
+                    html.Label("ΒΗΜΑ #2: ΜΗΤΡΩΟ ΑΝΤΙΣΤΑΣΗΣ ΜΕΤΑΚΙΝΗΣΕΩΝ",
+                            style={'font-weight': 'bold',
+                                    'fontSize' : '17px'}),
+                    dcc.Dropdown(id='availability-radio-resistance',
+                                value='exponential_function_74.csv',
+                                style={"display": "block",
+                        "margin-left": "auto",
+                        "margin-right": "auto",
+                        # "width":"60%"
+                        }),
+                    dcc.ConfirmDialogProvider(children=html.Button(
+                'Διευκρινησεις',
+                style={'float': 'right','margin': 'auto','background-color':'white'}
+            ),
+            id='clarifications',
+            message=clarifications,
         ),
-        id='clarifications',
-        message=clarifications,
-    ),
-                html.Div(id='output-provider-clarifications'),
-            ], className='four columns'),
-        ], className='row',
-            style= {'padding-left' : '50px',
-                    'padding-right': '50px'}), # closes the div for first line (matrix and year)
-        html.Hr(),
+                    html.Div(id='output-provider-clarifications'),
+                ], className='four columns'),
+            ], className='row',
+                style= {'padding-left' : '50px',
+                        'padding-right': '50px'}), # closes the div for first line (matrix and year)
+            html.Hr(),
+        ]),
     ],style = {'background-image':image,
                 'background-size':'cover',
                 'background-position':'right'}),
@@ -407,48 +464,48 @@ app.layout = html.Div([
         html.Div(id='prod-cons-input-table',  className='tableDiv'),
         # resistance table
         html.Hr(),
-        html.Label('Mητρώο αντίστασης μετακινήσεων μεταξύ γεωγραφικών ενοτήτων'),
+        #html.Label('Mητρώο αντίστασης μετακινήσεων μεταξύ γεωγραφικών ενοτήτων'),
         html.Div(id='resistance-input-table',  className='tableDiv'),
         # slider for choosing percentage of internal movements
         html.Div([
-            html.Label('Ποσοστό εσωτερικής Κατανάλωσης στους νομούς'),
+            html.Label('Ποσοστό εσωτερικής Κατανάλωσης: επιλογή ποσοστού εσωτερικής κατανάλωσης στους νομούς (βήμα 3ο προαιρετικό)'),
             dcc.Slider(id='internal-movement-slider',
                 min=0,
                 max=75,
-                value=35,
+                value=25,
                 step=1,
                 marks={
                     0: {'label': '0%', 'style': {'color': '#77b0b1'}},
-                    35: {'label': '35%'},
+                    25: {'label': '25%'},
                     50: {'label': '50%'},
                     75: {'label': '75%', 'style': {'color': '#f50'}}
                 }
             ),
-        ], style={'width': '25%', 'display': 'inline-block', 'vertical-align': 'middle'}),
+        ], style={'width': '50%', 'display': 'inline-block', 'vertical-align': 'middle'}),
     ]),
     html.Div(id='updatemode-output-container', style={'margin-top': 20}),
     html.Hr(),
     # execution button here
     html.Div([
-    html.Button('Υπολογισμός Κατανομής Μετακινήσεων', id='execution-button',n_clicks=0),
+    html.Button('Βήμα 4ο: Υπολογισμος Κατανομης Μετακινησεων', id='execution-button',n_clicks=0),
     ], style={'margin-bottom': '10px',
-              'textAlign':'center',
+              #'textAlign':'center',
               'width': '220px',
               'margin':'auto'}),
     html.Div(id='container-button-basic', className='tableDiv'),
     html.Hr(),
     html.Div(
         [
-            html.Button("Κατεβασμα δεδομενων (CSV)", id="btn_csv"),
+            dcc.Input(id="custom_title_input", type="text", placeholder="", style={'marginLeft':'10px','marginRight':'10px'}),
+            html.Button("ΒΗΜΑ 5ο: Αποθηκευση δεδομενων (csv) στον Η/Υ (προαιρετικό)", id="btn_csv", style={'marginLeft':'10px','marginRight':'10px'}),
             Download(id="download-dataframe-csv"),
-            dcc.Input(id="custom_title_input", type="text", placeholder="", style={'marginLeft':'100px','marginRight':'10px'}),
-            html.Button("Αποθηκευση δεδομενων", id="btn_save", n_clicks=0),
+            html.Button("Βημα 6ο: Αποθηκευση αποτελεσματων στη βαση", id="btn_save", n_clicks=0),
             html.Div(id='download-link'),
         ],
     ),
     html.Div(
         [
-            html.Label("Επιλογή διαφορετικών Κατανομών Μετακινήσεων προς Προβολή",
+            html.Label("Αθροιστική επιβάρυνση στο οδικό δίκτυο από την μεταφορά πολλαπλών προϊόντων",
                     style={'font-weight': 'bold',
                             'fontSize' : '17px',
                             'textAlign':'center',
@@ -479,10 +536,10 @@ app.layout = html.Div([
     ),
     html.Div([
         html.Button('Κατανομη στο Δικτυο (networkX)', id='networkx-button', n_clicks=0),
-        html.Button('Κατανομη στο Δικτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
+        #html.Button('Κατανομη στο Δικτυο (ArcGIS)', id='arcgis-button', n_clicks=0),
     ], className='row', style={'margin-bottom': '10px',
-              'textAlign':'center',
-              'width': '1020px',
+              #'textAlign':'center',
+              #'width': '1020px',
               'margin':'auto'}),
     html.Div(id='button-clicked-msg'),
     # map figure
@@ -532,7 +589,8 @@ app.layout = html.Div([
     Input('availability-radio-prods-cons', 'value'))
 def set_products_options(selected_country):
     #print(selected_country)
-    prod_cons_files = [f for f in listdir(prod_cons_path) if isfile(join(prod_cons_path, f))] #uploaded_files(prod_cons_path)
+    user_prod_cons_path = get_user_path(prod_cons_path)
+    prod_cons_files = [f for f in listdir(user_prod_cons_path) if isfile(join(user_prod_cons_path, f))] #uploaded_files(prod_cons_path)
     return [{'label': i, 'value': i} for i in prod_cons_files]
 
 
@@ -550,7 +608,9 @@ def set_region_group_by_options(selected_country):
      Input('region-selection', 'value'),
     ])
 def set_display_table(selected_prod_cons_matrix, reg_sel):
-    dff = load_matrix(prod_cons_path, selected_prod_cons_matrix)
+    user_prod_cons_path = get_user_path(prod_cons_path)
+    print("user_prod_cons_path is always ", user_prod_cons_path)
+    dff = load_matrix(user_prod_cons_path, selected_prod_cons_matrix)
     df_temp = dff.round()
     # assign names to a list
     global resistance_title_names
@@ -613,6 +673,7 @@ def set_products_options(selected_country):
     [Input('availability-radio-resistance', 'value'),
     ])
 def set_display_table(selected_resistance_matrix):
+    print("resistance path gonna be")
     dff = load_matrix(resistance_path, selected_resistance_matrix)
     # if (month_val):
     #     dff = dff[dff[MONTH] == month_val]
@@ -702,13 +763,19 @@ def display_value(value):
      State('region-selection', 'value'),
      State('internal-movement-slider', 'value')])
 def update_output(click_value, prod_cons_matrix, resistance_matrix, region_lvl, internal_pcnt):
-    prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
+    #prod_cons_input = str(prod_cons_path) + str(prod_cons_matrix)
+    user_prod_cons_path = get_user_path(prod_cons_path)
+    prod_cons_input = str(user_prod_cons_path) + str(prod_cons_matrix)
     resistance_input = str(resistance_path) + str(resistance_matrix)
     if not click_value:
         return dash.no_update
     #elif click_value > 0:
-    results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, internal_pcnt, group_by_col=region_lvl)
-    dff = load_matrix(results_path, results_filepath)
+    res_fpath = get_user_path(results_path) + 'output.csv'
+    results = fs_model.four_step_model(prod_cons_input, resistance_input, 1, internal_pcnt, group_by_col=region_lvl, res_fpath=res_fpath)
+    #dff = load_matrix(results_path, results_filepath)
+    fpath = set_filepath(auth.get_current_username(), results_path, results_filepath)
+    print("fpath in 777 gonna be ", fpath)
+    dff = load_matrix(fpath, results_filepath)
     df_temp = dff
     (styles, legend) = discrete_background_color_bins(df_temp, n_bins=7, columns='all')
     # create results columns' names
@@ -768,8 +835,11 @@ def displayClick(btn1, btn2):
     prevent_initial_call=True,
 )
 def func(n_clicks, prod_cons_matrix, region_lvl):
-    temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
-    return send_data_frame(download_df.to_csv, results_filepath)#"mydf.csv") # dash_extensions.snippets: send_data_frame
+    #fpath = set_filepath(auth.get_current_username(), od_matrices_path, results_name)
+    print("cant be here")
+    #temp_dff = load_matrix(str(prod_cons_path), str(prod_cons_matrix))
+    fpath = set_filepath(auth.get_current_username(), results_path, results_filepath) +'output.csv'
+    return send_data_frame(download_df.to_csv, fpath) #results_filepath)#"mydf.csv") # dash_extensions.snippets: send_data_frame
 
 
 @app.callback(
@@ -779,7 +849,9 @@ def print_flows(n_clicks,):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'networkx-button' in changed_id:
         global download_df
-        csv_filepath = results_path + results_filepath
+        fpath = set_filepath(auth.get_current_username(), results_path, results_filepath)
+        #csv_filepath = results_path + results_filepath
+        csv_filepath = fpath + results_filepath
         download_df.to_csv(csv_filepath, sep='\t')
         products_f = csv_filepath #'results/output-1.csv' #mydf.csv'
         global edges_list
@@ -876,14 +948,15 @@ def update_edges_output(click_value):
 def save_df_conf_to_disk(btn_click, title_input_val):
     # compute timestamp and name the filename.
     results_name = _create_results_name(title_input_val)
-    fpath = od_matrices_path + results_name
+    fpath = set_filepath(auth.get_current_username(), od_matrices_path, results_name) + results_name
+    print("fpath is ", fpath)
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'btn_save' in changed_id:
         global download_df
         download_df.to_csv(fpath, sep='\t', index=False)
         msg = 'Δημιουργήθηκε αρχείο μετακινήσεων με όνομα ' + results_name
     else:
-        msg = 'Δεν αποθηκεύθηκαν οι αλλαγές σε αρχείο.'
+        msg = ''
     return html.Div(msg)
 
 
@@ -891,7 +964,8 @@ def save_df_conf_to_disk(btn_click, title_input_val):
     Output('multi_od_selection', 'options'),
     Input('multi_od_selection', 'value'))
 def set_products_options(selected_files):
-    od_files = [f for f in listdir(od_matrices_path) if isfile(join(od_matrices_path, f))]
+    user_od_matrices_path = get_user_path(od_matrices_path)
+    od_files = [f for f in listdir(user_od_matrices_path) if isfile(join(user_od_matrices_path, f))]
     return [{'label': i, 'value': i} for i in od_files]
 
 

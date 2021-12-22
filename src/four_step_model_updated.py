@@ -309,7 +309,7 @@ def balance_quantities(df, prods_col, cons_col):
 
 
 
-def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, internal_mvment_pcnt=0, group_by_col='ΠΕΡΙΦΕΡΕΙΑ'):
+def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, internal_mvment_pcnt=0, group_by_col='ΠΕΡΙΦΕΡΕΙΑ', res_fpath='results/output.csv'):
     """ serious doc here. missing TODO
     """
     # read input arrays
@@ -325,7 +325,7 @@ def four_step_model(prod_cons_matrix_fp, antist_fp, pcntage, internal_mvment_pcn
     T = compute_4_step_model(prod_cons_tn, movement, crit_percentage, B_j)
     if internal_mvment_pcnt > 0:
         populate_diagonal_elements(T, prod_cons_tn)
-    results_file_path = 'results/output.csv'
+    results_file_path = res_fpath
     write_matrix_to_file(T, results_file_path, sep='\t', cols=movement.columns.tolist())
     # return the path of the new matrix to show as path
     return results_file_path
