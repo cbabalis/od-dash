@@ -320,6 +320,8 @@ def _get_route_details(edge):
     """ method to get route name and weight."""
     route_name = "Κέντρο Περιφερειακής Ενότητας"
     #route_flow = "Κίνηση: " + str(round(edge.usage_weight, 2))
+    if np.isnan(edge.usage_weight):
+        edge.usage_weight = 0
     route_flow = str(edge.edge_name) + ":" + str(int(edge.usage_weight)) + " κιλά"
     return route_name, route_flow
 
