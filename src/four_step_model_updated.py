@@ -264,15 +264,15 @@ def apply_internal_movement_factor(prod_cons_tn, internal_mvment_pcnt=35,
     Returns:
         DataFrame: Balanced dataframe.
     """
+    # next line is about gkassel normalization
+    prod_cons_tn = balance_quantities(prod_cons_tn, prods_col, cons_col)
     # modify the internal values according to the percentage for internal consumption.
     if internal_mvment_pcnt > 0:
         print("internal movement percentage is ", internal_mvment_pcnt)
-        # next line is about gkassel normalization
-        prod_cons_tn = balance_quantities(prod_cons_tn, prods_col, cons_col)
         prod_cons_tn = _set_internal_movement_column_values(prod_cons_tn, internal_mvment_pcnt,
                                                         prods_col, cons_col, int_mvm_col)
     # balance the matrix and returns
-    prod_cons_tn = balance_quantities(prod_cons_tn, prods_col, cons_col)
+    #prod_cons_tn = balance_quantities(prod_cons_tn, prods_col, cons_col)
     return prod_cons_tn
 
 
