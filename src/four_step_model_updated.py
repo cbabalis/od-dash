@@ -199,10 +199,13 @@ def populate_diagonal_elements(T, prod_cons_tn, int_mvm_col='internal_mvment'):
         T (list): list of lists containing OD matrix.
         prod_cons_tn (dataframe): Dataframe with productions, consumptions and internal consumptions.
     """
+    # following two lines reset index from a copy of prod-cons array for assigning
+    # correct values to the final result.
+    diagonal_values = prod_cons_tn[int_mvm_col].tolist()
     for (idx_i, val_i) in enumerate(T):
         for (idx_j, val_j) in enumerate(val_i):
             if idx_j == idx_i:
-                val_i[idx_j] = prod_cons_tn[int_mvm_col].pop(idx_j)
+                val_i[idx_j] = diagonal_values.pop(0) #prod_cons_tn[int_mvm_col].pop(idx_j)
 
 
 def read_user_input_xls(prod_cons_tn_fpath, movement_fpath, crit, sheet='for_BABIS'):
